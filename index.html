@@ -412,5 +412,24 @@
   loadProducts(products);
 </script>
 
+  <script>
+function placeOrder(name, price, image) {
+  const order = {
+    id: "BW" + Math.floor(Math.random() * 100000),
+    product: name,
+    price: price,
+    image: image,
+    status: "pending",
+    date: new Date().toDateString()
+  };
+
+  let orders = JSON.parse(localStorage.getItem("blackwearOrders")) || [];
+  orders.push(order);
+  localStorage.setItem("blackwearOrders", JSON.stringify(orders));
+
+  alert("Order placed successfully ✅");
+}
+</script>
+
 </body>
 </html>
