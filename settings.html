@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Blackwear</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+    .profile-pic { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+  <!-- HEADER -->
+  <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-brand">Settings</h1>
+    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+  </header>
+
+  <!-- USER INFO -->
+  <section class="p-5 flex items-center gap-4">
+    <img id="userPhoto" class="profile-pic" src="https://via.placeholder.com/50" alt="Profile Picture">
+    <div>
+      <p id="userName" class="font-semibold text-lg">User Name</p>
+      <p id="userEmail" class="text-sm text-gray-400">user@example.com</p>
+    </div>
+  </section>
+
+  <!-- SETTINGS CONTENT -->
+  <div class="p-5 space-y-6">
+
+    <!-- ACCOUNT SECTION -->
+    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-3">Account</h2>
+      <div class="space-y-4">
+        <a href="edit-profile.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
+          Edit Profile
+        </a>
+        <a href="change-password.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
+          Change Password
+        </a>
+      </div>
+    </section>
+
+    <!-- APP SETTINGS -->
+    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-3">App Settings</h2>
+      <div class="space-y-4">
+        <label class="flex items-center justify-between bg-dark p-4 rounded-lg border border-gray-700">
+          Notifications
+          <input type="checkbox" id="notifyToggle" class="w-5 h-5" checked>
+        </label>
+        <label class="flex items-center justify-between bg-dark p-4 rounded-lg border border-gray-700">
+          Dark Mode
+          <input type="checkbox" id="darkModeToggle" class="w-5 h-5" checked>
+        </label>
+      </div>
+    </section>
+
+    <!-- PRIVACY -->
+    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-3">Privacy & Security</h2>
+      <div class="space-y-4">
+        <a href="#" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">Terms & Conditions</a>
+        <a href="#" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">Privacy Policy</a>
+        <a href="#" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">Security Tips</a>
+      </div>
+    </section>
+
+    <!-- DANGER ZONE -->
+    <section class="bg-red-900/40 p-5 rounded-xl border border-red-700 shadow-xl">
+      <h2 class="text-xl font-semibold text-red-400 mb-3 flex items-center gap-2">⚠️ Danger Zone</h2>
+      <p class="text-red-300 text-sm mb-4">
+        Permanently deleting your account will remove all your data, orders, wishlist, and profile. This action cannot be undone.
+      </p>
+      <a href="delete-account.html" class="block w-full text-center py-3 bg-red-600 hover:bg-red-700 transition text-white rounded-lg font-semibold">
+        Delete Account Permanently
+      </a>
+    </section>
+
+    <!-- SIGN OUT -->
+    <section>
+      <button id="signOutBtn" class="w-full bg-brand text-black p-4 rounded-xl font-bold text-lg hover:bg-orange-500 transition">
+        Sign Out
+      </button>
+    </section>
+
+  </div>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+      authDomain: "blackwear-14a31.firebaseapp.com",
+      projectId: "blackwear-14a31",
+      storageBucket: "blackwear-14a31.firebasestorage.app",
+      messagingSenderId: "222479690292",
+      appId: "1:222479690292:web:82bd91e186da6412133861"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Auth protection & display user info
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      // Display user info
+      document.getElementById("userName").textContent = user.displayName || "Anonymous User";
+      document.getElementById("userEmail").textContent = user.email || "No email";
+      document.getElementById("userPhoto").src = user.photoURL || "https://via.placeholder.com/50";
+    });
+
+    // Sign Out
+    document.getElementById("signOutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+
+    // Optional: Dark mode toggle
+    const darkToggle = document.getElementById("darkModeToggle");
+    darkToggle.addEventListener("change", () => {
+      document.body.classList.toggle("bg-dark");
+    });
+  </script>
+
+</body>
+</html>
