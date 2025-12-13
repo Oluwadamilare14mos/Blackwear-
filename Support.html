@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Support — Blackwear</title>
+
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+  <!-- HEADER -->
+  <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-brand">Support</h1>
+    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">
+      Back
+    </a>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="p-5 max-w-4xl mx-auto space-y-8">
+
+    <!-- INTRO -->
+    <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-2">How can we help you?</h2>
+      <p class="text-gray-400 text-sm">
+        Our support team is here to help you with orders, payments, delivery, and account issues.
+      </p>
+    </section>
+
+    <!-- QUICK SUPPORT OPTIONS -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <a href="mailto:support@blackwear.com"
+         class="bg-[#111] p-5 rounded-xl border border-gray-700 hover:border-brand transition text-center">
+        📧
+        <h3 class="font-semibold mt-2">Email Support</h3>
+        <p class="text-sm text-gray-400">support@blackwear.com</p>
+      </a>
+
+      <a href="https://wa.me/2349036470778"
+         target="_blank"
+         class="bg-[#111] p-5 rounded-xl border border-gray-700 hover:border-brand transition text-center">
+        💬
+        <h3 class="font-semibold mt-2">live chat with Danny</h3>
+        <p class="text-sm text-gray-400">Chat with us</p>
+      </a>
+
+      <a href="contact.html"
+         class="bg-[#111] p-5 rounded-xl border border-gray-700 hover:border-brand transition text-center">
+        📝
+        <h3 class="font-semibold mt-2">Contact Form</h3>
+        <p class="text-sm text-gray-400">Send a message</p>
+      </a>
+    </section>
+
+    <!-- FAQ -->
+    <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-4">Frequently Asked Questions</h2>
+
+      <div class="space-y-4 text-sm">
+        <details class="bg-dark p-4 rounded-lg border border-gray-700">
+          <summary class="cursor-pointer font-semibold">
+            How do I track my order?
+          </summary>
+          <p class="mt-2 text-gray-400">
+            Go to <strong>Delivery Tracking</strong> from the menu to see your order status.
+          </p>
+        </details>
+
+        <details class="bg-dark p-4 rounded-lg border border-gray-700">
+          <summary class="cursor-pointer font-semibold">
+            Can I cancel my order?
+          </summary>
+          <p class="mt-2 text-gray-400">
+            Orders can only be cancelled while the status is <strong>Pending</strong>.
+          </p>
+        </details>
+
+        <details class="bg-dark p-4 rounded-lg border border-gray-700">
+          <summary class="cursor-pointer font-semibold">
+            What payment methods are accepted?
+          </summary>
+          <p class="mt-2 text-gray-400">
+            We accept bank transfer and other payment methods shown at checkout.
+          </p>
+        </details>
+
+        <details class="bg-dark p-4 rounded-lg border border-gray-700">
+          <summary class="cursor-pointer font-semibold">
+            My delivery is delayed, what should I do?
+          </summary>
+          <p class="mt-2 text-gray-400">
+            Contact support with your order ID so we can assist you quickly.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <!-- SUPPORT FORM -->
+    <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+      <h2 class="text-xl font-semibold text-brand mb-4">Contact Support</h2>
+
+      <form class="space-y-4">
+        <input
+          type="text"
+          placeholder="Your Name"
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"
+          required
+        />
+
+        <input
+          type="email"
+          placeholder="Your Email"
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"
+          required
+        />
+
+        <select
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
+          <option>Order Issue</option>
+          <option>Payment Problem</option>
+          <option>Delivery Delay</option>
+          <option>Account Issue</option>
+          <option>Other</option>
+        </select>
+
+        <textarea
+          rows="4"
+          placeholder="Describe your issue..."
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"
+          required></textarea>
+
+        <button
+          type="submit"
+          class="w-full bg-brand text-black p-3 rounded-lg font-semibold hover:bg-orange-500 transition">
+          Submit Request
+        </button>
+      </form>
+
+      <p class="text-xs text-gray-400 mt-3">
+        Support usually replies within 24 hours.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="text-center text-gray-500 text-xs p-6">
+    © 2025 Blackwear. All rights reserved.
+  </footer>
+
+</body>
+</html>
