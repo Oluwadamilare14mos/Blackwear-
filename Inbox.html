@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inbox — Blackwear</title>
+
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+  <!-- HEADER -->
+  <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-brand">Inbox</h1>
+    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">
+      Back
+    </a>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="p-5 max-w-3xl mx-auto">
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg text-center">
+      <p class="text-gray-400 text-sm">
+        You have no messages yet.
+      </p>
+    </div>
+
+    <!-- MESSAGE LIST -->
+    <div id="messageList" class="space-y-4 hidden"></div>
+
+  </main>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      query, 
+      where, 
+      orderBy, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+      authDomain: "blackwear-14a31.firebaseapp.com",
+      projectId: "blackwear-14a31",
+      storageBucket: "blackwear-14a31.firebasestorage.app",
+      messagingSenderId: "222479690292",
+      appId: "1:222479690292:web:82bd91e186da6412133861"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const emptyState = document.getElementById("emptyState");
+    const messageList = document.getElementById("messageList");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) return;
+
+      const q = query(
+        collection(db, "inbox"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      onSnapshot(q, (snap) => {
+        messageList.innerHTML = "";
+
+        if (snap.empty) {
+          emptyState.classList.remove("hidden");
+          messageList.classList.add("hidden");
+          return;
+        }
+
+        emptyState.classList.add("hidden");
+        messageList.classList.remove("hidden");
+
+        snap.forEach(doc => {
+          const m = doc.data();
+
+          const el = document.createElement("div");
+          el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+
+          el.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-semibold text-brand">${m.title || "Message"}</h3>
+              <span class="text-xs text-gray-400">
+                ${m.createdAt?.toDate().toLocaleString() || ""}
+              </span>
+            </div>
+            <p class="text-gray-300 text-sm">
+              ${m.body || ""}
+            </p>
+          `;
+
+          messageList.appendChild(el);
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>
