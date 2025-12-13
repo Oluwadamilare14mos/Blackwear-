@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wishlist — Blackwear</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+    .product-card img { object-fit: cover; border-radius: 12px; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+  <!-- HEADER -->
+  <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-brand">My Wishlist</h1>
+    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+  </header>
+
+  <!-- TOTAL PRICE SUMMARY -->
+  <div id="totalPrice" class="p-5 bg-[#111] border-b border-gray-700 text-white text-lg font-semibold hidden">
+    Total Price: ₦0
+  </div>
+
+  <!-- WISHLIST CONTENT -->
+  <main class="p-5">
+    <div id="wishlistContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Wishlist items injected here -->
+    </div>
+    <div id="noWishlistMsg" class="text-gray-400 text-center mt-10 hidden">
+      Your wishlist is empty. Browse products to add your favorites!
+    </div>
+  </main>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+      authDomain: "blackwear-14a31.firebaseapp.com",
+      projectId: "blackwear-14a31",
+      storageBucket: "blackwear-14a31.firebasestorage.app",
+      messagingSenderId: "222479690292",
+      appId: "1:222479690292:web:82bd91e186da6412133861"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const wishlistContainer = document.getElementById("wishlistContainer");
+    const noWishlistMsg = document.getElementById("noWishlistMsg");
+    const totalPriceEl = document.getElementById("totalPrice");
+
+    function escapeHtml(str) {
+      return String(str||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Update total price
+    function updateTotalPrice(items) {
+      const total = items.reduce((sum, item) => sum + Number(item.price||0), 0);
+      if (items.length) {
+        totalPriceEl.textContent = `Total Price: ₦${total.toLocaleString()}`;
+        totalPriceEl.classList.remove("hidden");
+      } else {
+        totalPriceEl.classList.add("hidden");
+      }
+    }
+
+    // Load wishlist items for the current user
+    async function loadWishlist(user) {
+      const wishlistRef = collection(db, "wishlist");
+      const q = query(wishlistRef, where("userId", "==", user.uid));
+      const snapshot = await getDocs(q);
+      wishlistContainer.innerHTML = "";
+
+      const items = [];
+      snapshot.forEach(docSnap => {
+        const item = docSnap.data();
+        item.docId = docSnap.id;
+        items.push(item);
+
+        const card = document.createElement("div");
+        card.className = "product-card bg-[#111] p-4 rounded-xl border border-gray-700 shadow-lg flex flex-col items-center";
+
+        card.innerHTML = `
+          <img src="${escapeHtml(item.image || 'https://via.placeholder.com/150')}" alt="${escapeHtml(item.name)}" class="w-full h-40 mb-2">
+          <h3 class="text-white font-semibold text-sm text-center">${escapeHtml(item.name)}</h3>
+          <p class="text-brand font-bold mb-3">₦${Number(item.price||0).toLocaleString()}</p>
+          <div class="flex gap-2 w-full">
+            <button class="moveCartBtn flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold">Move to Cart</button>
+            <button class="removeBtn flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold">Remove</button>
+          </div>
+        `;
+
+        const removeBtn = card.querySelector(".removeBtn");
+        removeBtn.addEventListener("click", async () => {
+          await deleteDoc(doc(db, "wishlist", item.docId));
+          card.remove();
+          updateTotalPrice(items.filter(i => i.docId !== item.docId));
+          if (!wishlistContainer.children.length) noWishlistMsg.classList.remove("hidden");
+        });
+
+        const moveCartBtn = card.querySelector(".moveCartBtn");
+        moveCartBtn.addEventListener("click", async () => {
+          await addDoc(collection(db, "orders"), {
+            userId: user.uid,
+            productId: item.productId || null,
+            productName: item.name,
+            price: Number(item.price || 0),
+            image: item.image || '',
+            status: "pending",
+            createdAt: serverTimestamp()
+          });
+
+          await deleteDoc(doc(db, "wishlist", item.docId));
+          card.remove();
+          updateTotalPrice(items.filter(i => i.docId !== item.docId));
+          if (!wishlistContainer.children.length) noWishlistMsg.classList.remove("hidden");
+          alert(`${item.name} moved to cart!`);
+        });
+
+        wishlistContainer.appendChild(card);
+      });
+
+      if (!items.length) noWishlistMsg.classList.remove("hidden");
+      else noWishlistMsg.classList.add("hidden");
+
+      updateTotalPrice(items);
+    }
+
+    // Auth protection
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      loadWishlist(user);
+    });
+  </script>
+
+</body>
+</html>
