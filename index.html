@@ -195,7 +195,7 @@
 
       list.forEach(p => {
         // ensure image field exists as 'image' (you confirmed that)
-        const img = p.image || 'https://i.imgur.com/VxV97lN.jpeg';
+        const img = p.image || 'https://via.placeholder.com/1200x400';
         const name = escapeHtml(p.name || 'Untitled');
         const price = Number(p.price || 0).toLocaleString();
 
@@ -203,14 +203,13 @@
         el.className = 'product-card';
         el.dataset.productId = p.id;
         el.innerHTML = `
-          <img src="${img}" alt="${name}">
-          <h3>${name}</h3>
-          <p>₦${price}</p>
-          <button onclick="placeOrder('${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}', '${p.id}')">Buy Now</button>
-        `;
-        grid.appendChild(el);
-      });
-    }
+  <img src="${img}"
+       alt="${name}"
+       onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+  <h3>${name}</h3>
+  <p>₦${price}</p>
+  <button onclick="placeOrder('${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}', '${p.id}')">Buy Now</button>
+`;
 
     // Random banner logic
     let bannerTimer = null;
