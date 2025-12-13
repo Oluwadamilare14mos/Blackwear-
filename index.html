@@ -203,9 +203,7 @@
         el.className = 'product-card';
         el.dataset.productId = p.id;
         el.innerHTML = `
-  <img src="${img}"
-       alt="${name}"
-       onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+  <img src="${img}" alt="${name}">
   <h3>${name}</h3>
   <p>₦${price}</p>
   <button onclick="placeOrder('${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}', '${p.id}')">Buy Now</button>
