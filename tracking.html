@@ -2,84 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Delivery Tracking Test</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delivery Tracking — Blackwear</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
   <style>
-    body {
-      background: #0b0b0b;
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    .order {
-      border: 1px solid #333;
-      padding: 15px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-    }
-    .status {
-      color: orange;
-      font-weight: bold;
-    }
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
   </style>
 </head>
-<body>
 
-<h1>Delivery Tracking (TEST)</h1>
-<p>If this page opens, Netlify routing is OK ✅</p>
+<body class="min-h-screen text-white">
 
-<div id="orders"></div>
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Delivery Tracking</h1>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+</header>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<main class="p-5 max-w-4xl mx-auto">
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31",
-    storageBucket: "blackwear-14a31.firebasestorage.app",
-    messagingSenderId: "222479690292",
-    appId: "1:222479690292:web:82bd91e186da6412133861"
+  <div id="emptyState" class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg text-center">
+    <p class="text-gray-400 text-sm">No deliveries to track yet.</p>
+  </div>
+
+  <div id="deliveryList" class="space-y-5 hidden"></div>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31",
+  storageBucket: "blackwear-14a31.firebasestorage.app",
+  messagingSenderId: "222479690292",
+  appId: "1:222479690292:web:82bd91e186da6412133861"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const emptyState = document.getElementById("emptyState");
+const deliveryList = document.getElementById("deliveryList");
+
+const progressMap = {
+  pending: 20,
+  processing: 40,
+  shipped: 60,
+  out_for_delivery: 80,
+  delivered: 100
+};
+
+function statusBadge(status){
+  const map = {
+    pending: "bg-gray-600",
+    processing: "bg-yellow-500 text-black",
+    shipped: "bg-blue-600",
+    out_for_delivery: "bg-purple-600",
+    delivered: "bg-green-600"
   };
+  return map[status] || "bg-gray-600";
+}
 
-  firebase.initializeApp(firebaseConfig);
+onAuthStateChanged(auth, (user) => {
+  if (!user) return location.href = "login.html";
 
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  const q = query(
+    collection(db, "orders"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
 
-  const ordersDiv = document.getElementById("orders");
-
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      await auth.signInAnonymously();
-      return;
-    }
-
-    const snap = await db
-      .collection("orders")
-      .where("userId", "==", user.uid)
-      .get();
+  onSnapshot(q, (snap) => {
+    deliveryList.innerHTML = "";
 
     if (snap.empty) {
-      ordersDiv.innerHTML = "<p>No orders found.</p>";
+      emptyState.classList.remove("hidden");
+      deliveryList.classList.add("hidden");
       return;
     }
+
+    emptyState.classList.add("hidden");
+    deliveryList.classList.remove("hidden");
 
     snap.forEach(doc => {
       const o = doc.data();
-      const div = document.createElement("div");
-      div.className = "order";
-      div.innerHTML = `
-        <p><b>Product:</b> ${o.productName || "N/A"}</p>
-        <p><b>Price:</b> ₦${o.price || 0}</p>
-        <p class="status"><b>Status:</b> ${o.status || "pending"}</p>
+      const progress = progressMap[o.status] || 0;
+
+      const el = document.createElement("div");
+      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+
+      el.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold text-brand">
+            Order #${doc.id.slice(0,8).toUpperCase()}
+          </h3>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(o.status)}">
+            ${(o.status || "pending").replaceAll("_"," ").toUpperCase()}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4 mb-4">
+          <img src="${o.image || 'https://via.placeholder.com/80'}"
+               class="w-16 h-16 rounded-lg object-cover border border-gray-700"/>
+          <div>
+            <p class="font-semibold">${o.productName || "Product"}</p>
+            <p class="text-sm text-gray-400">₦${Number(o.price||0).toLocaleString()}</p>
+          </div>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div class="mb-3">
+          <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div class="bg-brand h-2 transition-all duration-500"
+                 style="width:${progress}%"></div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">
+            Delivery progress: ${progress}%
+          </p>
+        </div>
+
+        <div class="text-xs text-gray-400 flex justify-between">
+          <span>Ordered: ${o.createdAt?.toDate().toLocaleDateString() || ""}</span>
+          <span>Est. Delivery: ${o.estimatedDelivery || "—"}</span>
+        </div>
       `;
-      ordersDiv.appendChild(div);
+
+      deliveryList.appendChild(el);
     });
   });
+});
 </script>
 
 </body>
