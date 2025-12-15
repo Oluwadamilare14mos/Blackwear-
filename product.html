@@ -4,83 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Product | Blackwear</title>
-
 <style>
-*{box-sizing:border-box;font-family:Segoe UI,Arial}
-body{margin:0;background:#0f0f0f;color:#fff}
-header{background:#000;padding:14px;text-align:center;font-size:20px;font-weight:bold;color:#ff7f00}
-
-.container{padding:16px;max-width:1100px;margin:auto}
-
-.main-image{
-  width:100%;
-  max-height:420px;
-  object-fit:cover;
-  border-radius:18px;
-  border:1px solid #222;
-}
-
-.product-title{font-size:22px;margin:14px 0 6px}
-.price{color:#ff7f00;font-size:20px;font-weight:bold}
-.desc{color:#ccc;font-size:14px;line-height:1.6;margin:10px 0}
-
-.actions{
-  display:flex;
-  gap:10px;
-  margin-top:14px;
-}
-.actions button{
-  flex:1;
-  padding:12px;
-  border-radius:14px;
-  border:none;
-  font-weight:bold;
-  cursor:pointer;
-}
-.cart-btn{background:#222;color:#fff}
-.buy-btn{background:#ff7f00;color:#000}
-.wishlist{
-  margin-top:10px;
-  font-size:14px;
-  cursor:pointer;
-  color:#ff7f00;
-}
-
-.related{
-  margin-top:30px;
-}
-.related h3{
-  margin-bottom:10px;
-}
-.related-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-.related-grid img{
-  width:100%;
-  height:120px;
-  object-fit:cover;
-  border-radius:12px;
-  border:1px solid #222;
-}
-footer{
-  text-align:center;
-  color:#666;
-  padding:20px;
-  font-size:13px;
-}
+  *{box-sizing:border-box;font-family:Segoe UI,Arial;}
+  body{margin:0;background:#0f0f0f;color:#fff;}
+  header{background:#000;padding:14px;text-align:center;font-size:20px;font-weight:bold;color:#ff7f00;}
+  .container{padding:16px;max-width:1100px;margin:auto;}
+  .main-image{width:100%;max-height:420px;object-fit:cover;border-radius:18px;border:1px solid #222;cursor:pointer;}
+  .product-title{font-size:22px;margin:14px 0 6px;}
+  .price{color:#ff7f00;font-size:20px;font-weight:bold;}
+  .desc{color:#ccc;font-size:14px;line-height:1.6;margin:10px 0;}
+  .actions{display:flex;gap:10px;margin-top:14px;}
+  .actions button{flex:1;padding:12px;border-radius:14px;border:none;font-weight:bold;cursor:pointer;}
+  .cart-btn{background:#222;color:#fff;}
+  .buy-btn{background:#ff7f00;color:#000;}
+  .wishlist{margin-top:10px;font-size:14px;cursor:pointer;color:#ff7f00;}
+  .related{margin-top:30px;}
+  .related h3{margin-bottom:10px;}
+  .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .related-grid img{width:100%;height:120px;object-fit:cover;border-radius:12px;border:1px solid #222;cursor:pointer;transition:.2s;}
+  .related-grid img:hover{border-color:#ff7f00;}
+  footer{text-align:center;color:#666;padding:20px;font-size:13px;}
 </style>
 </head>
-
 <body>
 
 <header>Blackwear</header>
 
 <div class="container">
-
   <img id="mainImage" class="main-image" src="" alt="Product">
-
   <h2 id="title" class="product-title"></h2>
   <div id="price" class="price"></div>
   <p id="desc" class="desc"></p>
@@ -94,90 +45,91 @@ footer{
 
   <div class="related">
     <h3>Related Images</h3>
-    <div class="related-grid">
-      <img id="r1">
-      <img id="r2">
-      <img id="r3">
-    </div>
+    <div class="related-grid" id="relatedGrid"></div>
   </div>
-
 </div>
 
 <footer>© 2025 Blackwear</footer>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-  authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
-});
+  // Firebase
+  firebase.initializeApp({
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31"
+  });
+  const db = firebase.firestore();
+  const auth = firebase.auth();
 
-const db = firebase.firestore();
-const auth = firebase.auth();
+  const params = new URLSearchParams(window.location.search);
+  const productId = params.get("id");
+  let currentProduct = null;
 
-const params = new URLSearchParams(window.location.search);
-const productId = params.get("id");
+  auth.signInAnonymously();
 
-let currentProduct = null;
+  function escapeHtml(s){ return String(s||''); }
 
-auth.signInAnonymously();
+  db.collection("products").doc(productId).get().then(snap=>{
+    if(!snap.exists) return;
+    const p = snap.data();
+    currentProduct = {id: snap.id, ...p};
 
-db.collection("products").doc(productId).get().then(snap=>{
-  if(!snap.exists) return;
+    // Main image
+    const mainImg = p.image || (Array.isArray(p.images) ? p.images[0] : "");
+    document.getElementById("mainImage").src = mainImg;
 
-  const p = snap.data();
-  currentProduct = p;
+    // Info
+    document.getElementById("title").innerText = escapeHtml(p.name);
+    document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
+    document.getElementById("desc").innerText = escapeHtml(p.description || "No description available");
 
-  const img =
-    p.image ||
-    p.Image ||
-    p.imageUrl ||
-    (Array.isArray(p.images) ? p.images[0] : "");
+    // Related images
+    const relatedGrid = document.getElementById("relatedGrid");
+    relatedGrid.innerHTML = "";
+    if(p.images && p.images.length){
+      p.images.slice(0,3).forEach(imgUrl=>{
+        const imgEl = document.createElement("img");
+        imgEl.src = imgUrl;
+        imgEl.onclick = ()=> {
+          // When click related image, update main image
+          document.getElementById("mainImage").src = imgUrl;
+        }
+        relatedGrid.appendChild(imgEl);
+      });
+    }
+  });
 
-  document.getElementById("mainImage").src = img;
-  document.getElementById("title").innerText = p.name || "Product";
-  document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
-  document.getElementById("desc").innerText = p.description || "No description available";
-
-  document.getElementById("r1").src = img;
-  document.getElementById("r2").src = img;
-  document.getElementById("r3").src = img;
-});
-
-function addToCart(){
-  alert("Added to cart");
-}
-
-function buyNow(){
-  window.location.href = "checkout.html?id=" + productId;
-}
-  
-function addWishlist(){
-  const user = firebase.auth().currentUser;
-  if(!user || !currentProduct){
-    alert("Please wait...");
-    return;
+  function addToCart(){
+    if(!currentProduct) return;
+    alert(`Added "${currentProduct.name}" to cart`);
+    // You can add Firestore or localStorage logic here
   }
 
-  db.collection("wishlist").add({
-    userId: user.uid,
-    productId: productId,
-    name: currentProduct.name || "",
-    price: currentProduct.price || 0,
-    image: currentProduct.image || "",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(()=>{
-    alert("Added to wishlist ❤️");
-  }).catch((err)=>{
-    console.error(err);
-    alert("Failed to add to wishlist");
-  });
-}
+  function buyNow(){
+    if(!currentProduct) return;
+    window.location.href = "checkout.html?id=" + productId;
+  }
+
+  function addWishlist(){
+    const user = auth.currentUser;
+    if(!user || !currentProduct){ alert("Please wait..."); return; }
+    db.collection("wishlist").add({
+      userId: user.uid,
+      productId: productId,
+      name: currentProduct.name || "",
+      price: currentProduct.price || 0,
+      image: currentProduct.image || (currentProduct.images?currentProduct.images[0]:""),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{
+      alert("Added to wishlist ❤️");
+    }).catch(err=>{
+      console.error(err);
+      alert("Failed to add to wishlist");
+    });
+  }
 </script>
 
 </body>
