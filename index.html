@@ -223,11 +223,32 @@ function displayProducts(list) {
       el.className = 'product-card';
       el.dataset.productId = p.id;
       el.innerHTML = `
-        <img src="${img}" alt="${name}">
-        <h3>${name}</h3>
-        <p>₦${price}</p>
-        <button onclick="placeOrder('${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}', '${p.id}')">Buy Now</button>
-      `;
+  <img src="${img}" alt="${name}">
+  <h3>${name}</h3>
+  <p>₦${price}</p>
+
+  <div class="product-actions">
+    <button class="buy-btn"
+      onclick="placeOrder(
+        '${escapeJs(p.name||'')}',
+        ${Number(p.price||0)},
+        '${escapeJs(img)}',
+        '${p.id}'
+      )">
+      Buy Now
+    </button>
+
+    <button class="cart-btn"
+      onclick="addToCart(
+        '${p.id}',
+        '${escapeJs(p.name||'')}',
+        ${Number(p.price||0)},
+        '${escapeJs(img)}'
+      )">
+      Add to Cart
+    </button>
+  </div>
+`;
       grid.appendChild(el);
     });
   }
