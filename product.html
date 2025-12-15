@@ -157,7 +157,6 @@ function buyNow(){
   window.location.href = "checkout.html?id=" + productId;
 }
   
-<script>
 function addWishlist(){
   const user = firebase.auth().currentUser;
   if(!user || !currentProduct){
