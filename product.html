@@ -55,7 +55,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script>
-  // Firebase
   firebase.initializeApp({
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
@@ -64,48 +63,57 @@
   const db = firebase.firestore();
   const auth = firebase.auth();
 
+  let currentProduct = null;
   const params = new URLSearchParams(window.location.search);
   const productId = params.get("id");
-  let currentProduct = null;
 
-  auth.signInAnonymously();
+  auth.signInAnonymously().then(loadProduct);
 
   function escapeHtml(s){ return String(s||''); }
 
-  db.collection("products").doc(productId).get().then(snap=>{
-    if(!snap.exists) return;
+  async function loadProduct(){
+    const snap = await db.collection("products").doc(productId).get();
+    if(!snap.exists){ alert("Product not found"); return; }
+
     const p = snap.data();
     currentProduct = {id: snap.id, ...p};
 
-    // Main image
-    const mainImg = p.image || (Array.isArray(p.images) ? p.images[0] : "");
+    const mainImg = p.image || (Array.isArray(p.images) && p.images.length ? p.images[0] : "");
     document.getElementById("mainImage").src = mainImg;
-
-    // Info
     document.getElementById("title").innerText = escapeHtml(p.name);
     document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
     document.getElementById("desc").innerText = escapeHtml(p.description || "No description available");
 
-    // Related images
     const relatedGrid = document.getElementById("relatedGrid");
     relatedGrid.innerHTML = "";
+
     if(p.images && p.images.length){
-      p.images.slice(0,3).forEach(imgUrl=>{
+      p.images.slice(0,3).forEach(imgUrl => {
         const imgEl = document.createElement("img");
         imgEl.src = imgUrl;
-        imgEl.onclick = ()=> {
-          // When click related image, update main image
-          document.getElementById("mainImage").src = imgUrl;
-        }
+        imgEl.onclick = () => {
+          window.location.href = "product.html?id=" + productId + "&img=" + encodeURIComponent(imgUrl);
+        };
         relatedGrid.appendChild(imgEl);
       });
     }
-  });
+
+    // If URL has ?img=, show that image as main
+    const selectedImg = params.get("img");
+    if(selectedImg){
+      document.getElementById("mainImage").src = decodeURIComponent(selectedImg);
+    }
+
+    document.getElementById("mainImage").onclick = () => {
+      // Open full screen or product page logic
+      window.location.href = "product.html?id=" + productId;
+    };
+  }
 
   function addToCart(){
     if(!currentProduct) return;
     alert(`Added "${currentProduct.name}" to cart`);
-    // You can add Firestore or localStorage logic here
+    // TODO: implement Firestore or localStorage cart logic
   }
 
   function buyNow(){
@@ -121,7 +129,7 @@
       productId: productId,
       name: currentProduct.name || "",
       price: currentProduct.price || 0,
-      image: currentProduct.image || (currentProduct.images?currentProduct.images[0]:""),
+      image: currentProduct.image || (currentProduct.images ? currentProduct.images[0] : ""),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(()=>{
       alert("Added to wishlist ❤️");
