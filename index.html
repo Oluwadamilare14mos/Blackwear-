@@ -351,6 +351,34 @@ function displayProducts(list) {
     }
   }
 
+   // Add to Cart (separate from orders)
+async function addToCart(productId, name, price, image){
+  try{
+    const user = auth.currentUser;
+    if(!user){
+      alert('Please wait...');
+      return;
+    }
+
+    await db.collection('cart').add({
+      userId: user.uid,
+      productId: productId,
+      productName: name,
+      price: Number(price),
+      image: image,
+      quantity: 1,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    cartCount++;
+    updateCartBadge();
+    alert('Added to cart');
+  }catch(err){
+    console.error('addToCart error', err);
+    alert('Failed to add to cart');
+  }
+}
+
   // Cart count
   let cartCount = 0;
   function incrementCartCount() { cartCount++; updateCartBadge(); }
