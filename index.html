@@ -182,68 +182,7 @@
     }
   }
 
-  function displayProducts(list) {
-  const grid = document.getElementById('productGrid');
-  grid.innerHTML = '';
-  if (!list || !list.length) {
-    document.getElementById('noProductsMsg').style.display = 'block';
-    return;
-  } else {
-    document.getElementById('noProductsMsg').style.display = 'none';
-  }
 
-  list.forEach(p => {
-    const img = p.image || 'https://via.placeholder.com/1200x400';
-    const name = escapeHtml(p.name || 'Untitled');
-    const price = Number(p.price || 0).toLocaleString();
-
-    const el = document.createElement('div');
-    el.className = 'product-card';
-    el.dataset.productId = p.id;
-
-    el.innerHTML = `
-      <img src="${img}" alt="${name}" onclick="openProductDetails('${p.id}')">
-      <h3>${name}</h3>
-      <p>₦${price}</p>
-      <div class="flex gap-2">
-        <button onclick="placeOrder('${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}', '${p.id}')">
-          Buy Now
-        </button>
-        <button onclick="addToCart('${escapeJs(p.id)}', '${escapeJs(p.name||'')}', ${Number(p.price||0)}, '${escapeJs(img)}')">
-          Add to Cart
-        </button>
-      </div>
-    `;
-
-    grid.appendChild(el);
-  });
-}
-
-// ---------------------
-// ADD TO CART FUNCTION
-// ---------------------
-function addToCart(id, name, price, image) {
-  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-  const existing = cart.find(item => item.id === id);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    cart.push({ id, name, price, image, qty: 1 });
-  }
-
-  localStorage.setItem('cart', JSON.stringify(cart));
-  incrementCartCount(); // update cart badge
-  alert(`${name} added to cart!`);
-}
-
-// ---------------------
-// PRODUCT DETAILS PAGE
-// ---------------------
-function openProductDetails(id) {
-  // redirect to a product details page with query param
-  window.location.href = `product-details.html?id=${id}`;
-}
 
     list.forEach(p => {
       const img = p.image || 'https://via.placeholder.com/1200x400';
