@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Details | Blackwear</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0b0b0b; color:white; }
+img { border-radius:14px; }
+</style>
+</head>
+
+<body>
+
+<header class="p-5 flex justify-between items-center bg-black">
+  <h1 class="text-xl font-bold text-orange-500">Blackwear</h1>
+  <a href="index.html" class="text-sm text-orange-400">Back</a>
+</header>
+
+<main class="max-w-5xl mx-auto p-5 grid md:grid-cols-2 gap-6">
+
+  <!-- IMAGES -->
+  <div>
+    <img id="mainImage" class="w-full mb-4">
+
+    <div class="grid grid-cols-3 gap-3">
+      <img id="img1">
+      <img id="img2">
+      <img id="img3">
+    </div>
+  </div>
+
+  <!-- DETAILS -->
+  <div>
+    <h2 id="name" class="text-2xl font-bold mb-2"></h2>
+    <p id="price" class="text-xl text-orange-400 mb-3"></p>
+    <p id="description" class="text-gray-300 mb-4"></p>
+
+    <button onclick="buyNow()" class="w-full bg-orange-500 text-black p-3 rounded-xl font-bold mb-3">
+      Buy Now
+    </button>
+
+    <button onclick="addToCart()" class="w-full border border-orange-500 text-orange-500 p-3 rounded-xl">
+      Add to Cart
+    </button>
+  </div>
+
+</main>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  // 🔴 your firebase config here
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("id");
+
+const ref = doc(db, "products", productId);
+const snap = await getDoc(ref);
+
+if (snap.exists()) {
+  const p = snap.data();
+
+  document.getElementById("name").textContent = p.name;
+  document.getElementById("price").textContent = "₦" + p.price.toLocaleString();
+  document.getElementById("description").textContent = p.description;
+
+  document.getElementById("mainImage").src = p.image;
+
+  // Related images (fallback)
+  document.getElementById("img1").src = p.image;
+  document.getElementById("img2").src = p.image;
+  document.getElementById("img3").src = p.image;
+}
+
+window.buyNow = function () {
+  window.location.href =
+    `checkout.html?id=${productId}`;
+};
+
+window.addToCart = function () {
+  alert("Added to cart (connect logic later)");
+};
+</script>
+
+</body>
+</html>
