@@ -157,8 +157,26 @@ function buyNow(){
   window.location.href = "checkout.html?id=" + productId;
 }
 
+<script>
 function addWishlist(){
-  alert("Added to wishlist ❤️");
+  const user = firebase.auth().currentUser;
+  if(!user || !currentProduct){
+    alert("Please wait...");
+    return;
+  }
+
+  db.collection("wishlist").add({
+    userId: user.uid,
+    productId: productId,
+    name: currentProduct.name || "",
+    price: currentProduct.price || 0,
+    image: currentProduct.image || "",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    alert("Added to wishlist ❤️");
+  }).catch(()=>{
+    alert("Failed to add to wishlist");
+  });
 }
 </script>
 
