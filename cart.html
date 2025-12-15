@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart — Blackwear</title>
+
+<!-- Fonts & Tailwind -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: "#ff7f00",
+        dark: "#0b0b0b"
+      },
+      fontFamily: {
+        poppins: ["Poppins","sans-serif"]
+      }
+    }
+  }
+}
+</script>
+
+<style>
+body { background:#0b0b0b; font-family:Poppins,sans-serif; }
+</style>
+</head>
+
+<body class="min-h-screen text-white">
+
+<!-- HEADER -->
+<header class="p-5 bg-dark flex justify-between items-center shadow-lg">
+  <h1 class="text-2xl font-bold text-brand">My Cart</h1>
+  <a href="store.html"
+     class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">
+    Continue Shopping
+  </a>
+</header>
+
+<!-- CONTENT -->
+<main class="max-w-4xl mx-auto p-5 space-y-6">
+
+  <!-- EMPTY CART -->
+  <div id="emptyCart"
+       class="bg-[#111] p-8 rounded-xl border border-gray-700 text-center hidden">
+    <p class="text-gray-400">Your cart is empty.</p>
+  </div>
+
+  <!-- CART ITEMS -->
+  <div id="cartItems" class="space-y-4"></div>
+
+  <!-- SUMMARY -->
+  <div id="cartSummary"
+       class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg hidden">
+    <div class="flex justify-between mb-4">
+      <span class="text-gray-400">Subtotal</span>
+      <span id="subtotal" class="font-bold text-brand">₦0</span>
+    </div>
+
+    <button id="checkoutBtn"
+      class="w-full bg-brand text-black p-4 rounded-lg font-semibold text-lg hover:bg-orange-500 transition">
+      Proceed to Checkout
+    </button>
+  </div>
+
+</main>
+
+<script>
+const cartItemsEl = document.getElementById("cartItems");
+const emptyCartEl = document.getElementById("emptyCart");
+const cartSummaryEl = document.getElementById("cartSummary");
+const subtotalEl = document.getElementById("subtotal");
+
+let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+function renderCart() {
+  cartItemsEl.innerHTML = "";
+
+  if (cart.length === 0) {
+    emptyCartEl.classList.remove("hidden");
+    cartSummaryEl.classList.add("hidden");
+    return;
+  }
+
+  emptyCartEl.classList.add("hidden");
+  cartSummaryEl.classList.remove("hidden");
+
+  let subtotal = 0;
+
+  cart.forEach((item, index) => {
+    subtotal += item.price * item.qty;
+
+    const el = document.createElement("div");
+    el.className = "bg-[#111] p-4 rounded-xl border border-gray-700 shadow-lg";
+
+    el.innerHTML = `
+      <div class="flex gap-4 items-center">
+        <img src="${item.image}"
+             class="w-20 h-20 rounded-lg object-cover border border-gray-700">
+
+        <div class="flex-1">
+          <h3 class="font-semibold">${item.name}</h3>
+          <p class="text-sm text-gray-400">
+            ₦${item.price.toLocaleString()}
+          </p>
+
+          <div class="flex items-center gap-2 mt-2">
+            <input type="number" min="1" value="${item.qty}"
+              class="w-16 p-1 bg-dark border border-gray-700 rounded"
+              onchange="updateQty(${index}, this.value)">
+            <button onclick="removeItem(${index})"
+              class="text-red-400 text-sm hover:underline">
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <div class="font-bold text-brand">
+          ₦${(item.price * item.qty).toLocaleString()}
+        </div>
+      </div>
+    `;
+
+    cartItemsEl.appendChild(el);
+  });
+
+  subtotalEl.textContent = `₦${subtotal.toLocaleString()}`;
+}
+
+function updateQty(index, qty) {
+  cart[index].qty = Math.max(1, Number(qty));
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+}
+
+function removeItem(index) {
+  cart.splice(index, 1);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+}
+
+document.getElementById("checkoutBtn").onclick = () => {
+  // For now we checkout the first item (simple & clean)
+  const item = cart[0];
+  location.href = `checkout.html?productId=${item.productId}`;
+};
+
+renderCart();
+</script>
+
+</body>
+</html>
