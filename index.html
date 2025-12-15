@@ -182,7 +182,15 @@
     }
   }
 
-
+function displayProducts(list) {  
+      const grid = document.getElementById('productGrid');  
+      grid.innerHTML = '';  
+      if (!list || !list.length) {  
+        document.getElementById('noProductsMsg').style.display = 'block';  
+        return;  
+      } else {  
+        document.getElementById('noProductsMsg').style.display = 'none';  
+      }  
 
     list.forEach(p => {
       const img = p.image || 'https://via.placeholder.com/1200x400';
