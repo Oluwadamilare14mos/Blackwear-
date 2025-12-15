@@ -2,95 +2,164 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Product Details | Blackwear</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product | Blackwear</title>
 
 <style>
-body { background:#0b0b0b; color:white; }
-img { border-radius:14px; }
+*{box-sizing:border-box;font-family:Segoe UI,Arial}
+body{margin:0;background:#0f0f0f;color:#fff}
+header{background:#000;padding:14px;text-align:center;font-size:20px;font-weight:bold;color:#ff7f00}
+
+.container{padding:16px;max-width:1100px;margin:auto}
+
+.main-image{
+  width:100%;
+  max-height:420px;
+  object-fit:cover;
+  border-radius:18px;
+  border:1px solid #222;
+}
+
+.product-title{font-size:22px;margin:14px 0 6px}
+.price{color:#ff7f00;font-size:20px;font-weight:bold}
+.desc{color:#ccc;font-size:14px;line-height:1.6;margin:10px 0}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+.actions button{
+  flex:1;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  font-weight:bold;
+  cursor:pointer;
+}
+.cart-btn{background:#222;color:#fff}
+.buy-btn{background:#ff7f00;color:#000}
+.wishlist{
+  margin-top:10px;
+  font-size:14px;
+  cursor:pointer;
+  color:#ff7f00;
+}
+
+.related{
+  margin-top:30px;
+}
+.related h3{
+  margin-bottom:10px;
+}
+.related-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.related-grid img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid #222;
+}
+footer{
+  text-align:center;
+  color:#666;
+  padding:20px;
+  font-size:13px;
+}
 </style>
 </head>
 
 <body>
 
-<header class="p-5 flex justify-between items-center bg-black">
-  <h1 class="text-xl font-bold text-orange-500">Blackwear</h1>
-  <a href="index.html" class="text-sm text-orange-400">Back</a>
-</header>
+<header>Blackwear</header>
 
-<main class="max-w-5xl mx-auto p-5 grid md:grid-cols-2 gap-6">
+<div class="container">
 
-  <!-- IMAGES -->
-  <div>
-    <img id="mainImage" class="w-full mb-4">
+  <img id="mainImage" class="main-image" src="" alt="Product">
 
-    <div class="grid grid-cols-3 gap-3">
-      <img id="img1">
-      <img id="img2">
-      <img id="img3">
+  <h2 id="title" class="product-title"></h2>
+  <div id="price" class="price"></div>
+  <p id="desc" class="desc"></p>
+
+  <div class="actions">
+    <button class="cart-btn" onclick="addToCart()">Add to Cart</button>
+    <button class="buy-btn" onclick="buyNow()">Buy Now</button>
+  </div>
+
+  <div class="wishlist" onclick="addWishlist()">❤️ Add to Wishlist</div>
+
+  <div class="related">
+    <h3>Related Images</h3>
+    <div class="related-grid">
+      <img id="r1">
+      <img id="r2">
+      <img id="r3">
     </div>
   </div>
 
-  <!-- DETAILS -->
-  <div>
-    <h2 id="name" class="text-2xl font-bold mb-2"></h2>
-    <p id="price" class="text-xl text-orange-400 mb-3"></p>
-    <p id="description" class="text-gray-300 mb-4"></p>
+</div>
 
-    <button onclick="buyNow()" class="w-full bg-orange-500 text-black p-3 rounded-xl font-bold mb-3">
-      Buy Now
-    </button>
-
-    <button onclick="addToCart()" class="w-full border border-orange-500 text-orange-500 p-3 rounded-xl">
-      Add to Cart
-    </button>
-  </div>
-
-</main>
+<footer>© 2025 Blackwear</footer>
 
 <!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
-const firebaseConfig = {
-  // 🔴 your firebase config here
-};
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
 const params = new URLSearchParams(window.location.search);
 const productId = params.get("id");
 
-const ref = doc(db, "products", productId);
-const snap = await getDoc(ref);
+let currentProduct = null;
 
-if (snap.exists()) {
+auth.signInAnonymously();
+
+db.collection("products").doc(productId).get().then(snap=>{
+  if(!snap.exists) return;
+
   const p = snap.data();
+  currentProduct = p;
 
-  document.getElementById("name").textContent = p.name;
-  document.getElementById("price").textContent = "₦" + p.price.toLocaleString();
-  document.getElementById("description").textContent = p.description;
+  const img =
+    p.image ||
+    p.Image ||
+    p.imageUrl ||
+    (Array.isArray(p.images) ? p.images[0] : "");
 
-  document.getElementById("mainImage").src = p.image;
+  document.getElementById("mainImage").src = img;
+  document.getElementById("title").innerText = p.name || "Product";
+  document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
+  document.getElementById("desc").innerText = p.description || "No description available";
 
-  // Related images (fallback)
-  document.getElementById("img1").src = p.image;
-  document.getElementById("img2").src = p.image;
-  document.getElementById("img3").src = p.image;
+  document.getElementById("r1").src = img;
+  document.getElementById("r2").src = img;
+  document.getElementById("r3").src = img;
+});
+
+function addToCart(){
+  alert("Added to cart");
 }
 
-window.buyNow = function () {
-  window.location.href =
-    `checkout.html?id=${productId}`;
-};
+function buyNow(){
+  window.location.href = "checkout.html?id=" + productId;
+}
 
-window.addToCart = function () {
-  alert("Added to cart (connect logic later)");
-};
+function addWishlist(){
+  alert("Added to wishlist ❤️");
+}
 </script>
 
 </body>
