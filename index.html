@@ -223,8 +223,15 @@ function displayProducts(list) {
       el.className = 'product-card';
       el.dataset.productId = p.id;
       el.innerHTML = `
+  <a href="product.html?id=${p.id}">
   <img src="${img}" alt="${name}">
-  <h3>${name}</h3>
+</a>
+
+<h3>
+  <a href="product.html?id=${p.id}" style="color:inherit;text-decoration:none;">
+    ${name}
+  </a>
+</h3>
   <p>₦${price}</p>
 
   <div class="product-actions">
