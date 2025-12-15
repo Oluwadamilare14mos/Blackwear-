@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — Blackwear</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { brand:"#ff7f00", dark:"#0b0b0b" },
+      fontFamily: { poppins:["Poppins","sans-serif"] }
+    }
+  }
+}
+</script>
+
+<style>
+body { background:#0b0b0b; font-family:Poppins,sans-serif; }
+</style>
+</head>
+
+<body class="text-white min-h-screen">
+
+<header class="p-5 bg-dark flex justify-between items-center">
+  <h1 class="text-xl font-bold text-brand">Checkout</h1>
+  <a href="store.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+</header>
+
+<main class="max-w-3xl mx-auto p-5">
+
+  <div id="productBox" class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg hidden">
+    <div class="flex gap-4">
+      <img id="productImage" class="w-32 h-32 rounded-lg object-cover border border-gray-700 cursor-pointer">
+      <div>
+        <h2 id="productName" class="text-lg font-semibold"></h2>
+        <p id="productPrice" class="text-brand font-bold mt-1"></p>
+        <p id="productDesc" class="text-sm text-gray-400 mt-2"></p>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="text-sm">Quantity</label>
+      <input id="qty" type="number" value="1" min="1"
+        class="w-20 mt-1 p-2 bg-dark border border-gray-700 rounded">
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button id="addToCartBtn"
+        class="flex-1 bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold">
+        Add to Cart
+      </button>
+
+      <button id="buyNowBtn"
+        class="flex-1 bg-brand text-black p-3 rounded-lg font-semibold hover:bg-orange-500">
+        Buy Now
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("productId");
+
+if (!productId) location.href = "store.html";
+
+const productBox = document.getElementById("productBox");
+const imgEl = document.getElementById("productImage");
+const nameEl = document.getElementById("productName");
+const priceEl = document.getElementById("productPrice");
+const descEl = document.getElementById("productDesc");
+
+let productData;
+
+const snap = await getDoc(doc(db, "products", productId));
+if (snap.exists()) {
+  productData = snap.data();
+  imgEl.src = productData.image;
+  nameEl.textContent = productData.name;
+  priceEl.textContent = `₦${productData.price.toLocaleString()}`;
+  descEl.textContent = productData.description;
+  productBox.classList.remove("hidden");
+}
+
+imgEl.onclick = () => {
+  location.href = `product-details.html?productId=${productId}`;
+};
+
+// ADD TO CART
+document.getElementById("addToCartBtn").onclick = () => {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  cart.push({ productId, ...productData, qty: Number(qty.value) });
+  localStorage.setItem("cart", JSON.stringify(cart));
+  alert("Added to cart");
+};
+
+// BUY NOW
+document.getElementById("buyNowBtn").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return alert("Please login");
+
+  await addDoc(collection(db,"orders"), {
+    userId: user.uid,
+    productId,
+    productName: productData.name,
+    price: productData.price,
+    image: productData.image,
+    quantity: Number(qty.value),
+    status: "pending",
+    createdAt: serverTimestamp(),
+    estimatedDelivery: "3–5 working days"
+  });
+
+  location.href = "my-orders.html";
+};
+</script>
+
+</body>
+</html>
