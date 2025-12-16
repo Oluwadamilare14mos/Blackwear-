@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Settings — Blackwear</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delete Account — Blackwear</title>
 
-  <!-- Tailwind CSS & Fonts -->
+  <!-- Fonts & Tailwind -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -16,7 +16,7 @@
           colors: {
             brand: "#ff7f00",
             dark: "#0b0b0b",
-            danger: "#b91c1c"
+            danger: "#dc2626"
           },
           fontFamily: { poppins: ["Poppins", "sans-serif"] },
         },
@@ -25,124 +25,118 @@
   </script>
 
   <style>
-    body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
   </style>
 </head>
-<body class="min-h-screen text-white">
 
-  <!-- HEADER -->
-  <header class="flex justify-between items-center p-5 bg-dark shadow-lg">
-    <h1 class="text-2xl font-bold text-brand">Settings</h1>
-    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold hover:bg-orange-500 transition">
-      Back
-    </a>
-  </header>
+<body class="min-h-screen text-white flex items-center justify-center">
 
-  <!-- SETTINGS CONTENT -->
-  <main class="p-5 max-w-4xl mx-auto space-y-6">
+  <div class="bg-[#111] border border-gray-700 rounded-xl shadow-xl p-6 w-full max-w-md text-center">
 
-    <!-- ACCOUNT SECTION -->
-    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
-      <h2 class="text-xl font-semibold text-brand mb-3">Account</h2>
-      <div class="space-y-4">
-        <a href="edit-profile.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Edit Profile
-        </a>
-        <a href="change-password.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Change Password
-        </a>
-        <a href="email-preferences.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Email Preferences
-        </a>
-      </div>
-    </section>
+    <h1 class="text-2xl font-bold text-danger mb-3">Delete Account</h1>
 
-    <!-- APP SETTINGS -->
-    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
-      <h2 class="text-xl font-semibold text-brand mb-3">App Settings</h2>
-      <div class="space-y-4">
-        <label class="flex items-center justify-between bg-dark p-4 rounded-lg border border-gray-700">
-          Notifications
-          <input type="checkbox" id="notifyToggle" class="w-5 h-5" checked>
-        </label>
-        <label class="flex items-center justify-between bg-dark p-4 rounded-lg border border-gray-700">
-          Dark Mode
-          <input type="checkbox" id="darkModeToggle" class="w-5 h-5" checked>
-        </label>
-      </div>
-    </section>
+    <p class="text-gray-400 text-sm mb-5">
+      This action is <strong class="text-danger">permanent</strong>.  
+      Your account, cart, orders, and all data will be deleted forever.
+    </p>
 
-    <!-- PRIVACY & SECURITY -->
-    <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
-      <h2 class="text-xl font-semibold text-brand mb-3">Privacy & Security</h2>
-      <div class="space-y-4">
-        <a href="terms.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Terms & Conditions
-        </a>
-        <a href="privacy.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Privacy Policy
-        </a>
-        <a href="security-tips.html" class="block bg-dark p-4 rounded-lg border border-gray-700 hover:border-brand transition">
-          Security Tips
-        </a>
-      </div>
-    </section>
-
-    <!-- DANGER ZONE -->
-    <section class="bg-danger/20 p-5 rounded-xl border border-danger shadow-xl">
-      <h2 class="text-xl font-semibold text-danger mb-3 flex items-center gap-2">⚠️ Danger Zone</h2>
-      <p class="text-red-300 text-sm mb-4">
-        Deleting your account will remove all your data, orders, wishlist, and profile permanently.
-        This action cannot be undone.
-      </p>
-      <a href="delete-account.html"
-         class="block w-full text-center py-3 bg-danger hover:bg-red-700 text-white rounded-lg font-semibold transition">
-         Delete Account Permanently
-      </a>
-    </section>
-
-    <!-- SIGN OUT -->
-    <section>
-      <button id="signOutBtn" class="w-full bg-brand text-black p-4 rounded-xl font-bold text-lg hover:bg-orange-500 transition">
-        Sign Out
+    <div class="space-y-3">
+      <button id="deleteBtn"
+        class="w-full bg-danger hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition">
+        Yes, Delete My Account
       </button>
-    </section>
 
-  </main>
+      <a href="settings.html"
+        class="block w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition">
+        Cancel
+      </a>
+    </div>
 
-  <!-- FIREBASE AUTH -->
+    <p id="statusMsg" class="text-sm mt-4"></p>
+  </div>
+
+  <!-- FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
       authDomain: "blackwear-14a31.firebaseapp.com",
-      projectId: "blackwear-14a31",
-      storageBucket: "blackwear-14a31.firebasestorage.app",
-      messagingSenderId: "222479690292",
-      appId: "1:222479690292:web:82bd91e186da6412133861"
+      projectId: "blackwear-14a31"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Protect page: redirect if not logged in
+    const statusMsg = document.getElementById("statusMsg");
+    const deleteBtn = document.getElementById("deleteBtn");
+
+    let currentUser = null;
+
     onAuthStateChanged(auth, (user) => {
-      if (!user) window.location.href = "login.html";
+      if (!user) {
+        window.location.href = "index.html";
+      } else {
+        currentUser = user;
+      }
     });
 
-    // Sign out functionality
-    document.getElementById("signOutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "login.html";
-    });
+    deleteBtn.addEventListener("click", async () => {
+      if (!currentUser) return;
 
-    // Optional: Dark Mode Toggle
-    const darkToggle = document.getElementById("darkModeToggle");
-    darkToggle.addEventListener("change", () => {
-      if(darkToggle.checked) document.body.classList.add("bg-dark");
-      else document.body.classList.remove("bg-dark");
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = "Deleting...";
+      statusMsg.textContent = "Please wait...";
+      statusMsg.className = "text-sm mt-4 text-gray-400";
+
+      try {
+        // DELETE CART
+        const cartSnap = await getDocs(
+          query(collection(db, "cart"), where("userId", "==", currentUser.uid))
+        );
+        cartSnap.forEach(d => deleteDoc(d.ref));
+
+        // DELETE WISHLIST
+        const wishSnap = await getDocs(
+          query(collection(db, "wishlist"), where("userId", "==", currentUser.uid))
+        );
+        wishSnap.forEach(d => deleteDoc(d.ref));
+
+        // DELETE ORDERS
+        const orderSnap = await getDocs(
+          query(collection(db, "orders"), where("userId", "==", currentUser.uid))
+        );
+        orderSnap.forEach(d => deleteDoc(d.ref));
+
+        // DELETE AUTH ACCOUNT
+        await deleteUser(currentUser);
+
+        statusMsg.textContent = "Account deleted successfully.";
+        statusMsg.className = "text-sm mt-4 text-green-500";
+
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
+
+      } catch (err) {
+        console.error(err);
+
+        statusMsg.textContent = "Failed to delete account. Refresh and try again.";
+        statusMsg.className = "text-sm mt-4 text-red-500";
+
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = "Yes, Delete My Account";
+      }
     });
   </script>
 
