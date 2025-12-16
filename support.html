@@ -73,17 +73,17 @@
     <h2 class="text-xl font-semibold text-brand mb-4">Send a Message</h2>
 
     <form id="supportForm" class="space-y-4">
-      <input id="name" type="text" placeholder="Your Name"
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand" required>
+      <input id="name" type="text" placeholder="Your Name" required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
 
-      <input id="email" type="email" placeholder="Your Email"
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand" required>
+      <input id="email" type="email" placeholder="Your Email" required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
 
       <input id="phone" type="tel" placeholder="Phone Number"
         class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
 
-      <textarea id="message" rows="4" placeholder="Describe your issue..."
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand" required></textarea>
+      <textarea id="message" rows="4" placeholder="Describe your issue..." required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"></textarea>
 
       <button type="submit"
         class="w-full bg-brand text-black p-3 rounded-lg font-semibold hover:bg-orange-500 transition">
@@ -103,6 +103,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
 <script>
   firebase.initializeApp({
@@ -112,6 +113,10 @@
   });
 
   const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  // ✅ Anonymous Authentication (NO LOGIN REQUIRED)
+  auth.signInAnonymously().catch(err => console.error(err));
 
   document.getElementById("supportForm").addEventListener("submit", async (e) => {
     e.preventDefault();
