@@ -101,46 +101,63 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
-<script>
-  firebase.initializeApp({
+script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  import { 
+    getAuth, 
+    signInAnonymously, 
+    onAuthStateChanged 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+  const firebaseConfig = {
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+
+  // Init
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // 🔐 SIGN IN ANONYMOUSLY
+  signInAnonymously(auth).catch((error) => {
+    console.error("Anonymous auth failed:", error);
   });
 
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-
-  // ✅ Anonymous Authentication
-  auth.signInAnonymously().catch(err => console.error(err));
-
+  // FORM SUBMIT
   const form = document.getElementById("supportForm");
-  const statusMsg = document.getElementById("statusMsg");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    statusMsg.textContent = "Sending message...";
-    statusMsg.className = "text-sm text-gray-400 text-center mt-3";
-
     try {
-      await db.collection("supportMessages").add({
-        name: name.value.trim(),
-        email: email.value.trim(),
-        phone: phone.value.trim(),
-        message: message.value.trim(),
+      await addDoc(collection(db, "supportMessages"), {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        message: document.getElementById("message").value.trim(),
+        createdAt: serverTimestamp(),
         source: "help-and-support",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        uid: auth.currentUser?.uid || null
       });
 
-      statusMsg.textContent = "Message sent successfully ✅";
-      statusMsg.className = "text-sm text-green-500 text-center mt-3";
+      alert("Message sent successfully ✅");
       form.reset();
 
     } catch (err) {
-      console.error(err);
-      statusMsg.textContent = "Failed to send message ❌";
-      statusMsg.className = "text-sm text-red-500 text-center mt-3";
+      console.error("Firestore error:", err);
+      alert("Failed to send message ❌");
     }
   });
 </script>
