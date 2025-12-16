@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Help & Support — Blackwear</title>
 
-  <!-- Tailwind CSS & Fonts -->
+  <!-- Fonts & Tailwind -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -30,13 +30,16 @@
 
 <body class="min-h-screen text-white">
 
+<!-- HEADER -->
 <header class="flex justify-between items-center p-5 bg-dark shadow-lg">
   <h1 class="text-2xl font-bold text-brand">Help & Support</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold hover:bg-orange-500 transition">
+  <a href="index.html"
+     class="bg-brand text-black px-4 py-2 rounded-lg font-semibold hover:bg-orange-500 transition">
     Back
   </a>
 </header>
 
+<!-- MAIN -->
 <main class="p-5 max-w-4xl mx-auto space-y-6">
 
   <!-- FAQ -->
@@ -45,15 +48,17 @@
     <div class="space-y-3">
       <details class="bg-dark p-4 rounded-lg border border-gray-700">
         <summary class="font-semibold cursor-pointer">How can I track my orders?</summary>
-        <p class="mt-2 text-gray-400">Use the Delivery Tracking page to follow your order status.</p>
+        <p class="mt-2 text-gray-400">You can track your orders using the Delivery Tracking page.</p>
       </details>
+
       <details class="bg-dark p-4 rounded-lg border border-gray-700">
         <summary class="font-semibold cursor-pointer">How can I return or exchange items?</summary>
-        <p class="mt-2 text-gray-400">Contact support via WhatsApp or the form below.</p>
+        <p class="mt-2 text-gray-400">Contact our support team via live chat or email.</p>
       </details>
+
       <details class="bg-dark p-4 rounded-lg border border-gray-700">
-        <summary class="font-semibold cursor-pointer">What payment methods are supported?</summary>
-        <p class="mt-2 text-gray-400">Bank transfer and other payment options shown at checkout.</p>
+        <summary class="font-semibold cursor-pointer">Payment methods supported?</summary>
+        <p class="mt-2 text-gray-400">We accept debit cards, credit cards, and mobile payments.</p>
       </details>
     </div>
   </section>
@@ -64,13 +69,13 @@
 
     <form id="supportForm" class="space-y-4">
       <input id="name" type="text" placeholder="Your Name" required
-        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none"/>
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
 
       <input id="email" type="email" placeholder="Your Email" required
-        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none"/>
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
 
       <input id="phone" type="text" placeholder="Phone Number (optional)"
-        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none"/>
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
 
       <textarea id="message" rows="5" placeholder="Your Message" required
         class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none"></textarea>
@@ -81,7 +86,7 @@
       </button>
     </form>
 
-    <p id="statusMsg" class="text-sm text-center mt-3"></p>
+    <p id="statusMsg" class="text-sm text-center mt-3 text-gray-400"></p>
   </section>
 
   <!-- LIVE CHAT -->
@@ -96,25 +101,11 @@
 
 </main>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-
-script type="module">
+<!-- FIREBASE -->
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    serverTimestamp 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-  import { 
-    getAuth, 
-    signInAnonymously, 
-    onAuthStateChanged 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -125,39 +116,39 @@ script type="module">
     appId: "1:222479690292:web:82bd91e186da6412133861"
   };
 
-  // Init
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // 🔐 SIGN IN ANONYMOUSLY
-  signInAnonymously(auth).catch((error) => {
-    console.error("Anonymous auth failed:", error);
-  });
+  // 🔐 Anonymous Login (CRITICAL)
+  await signInAnonymously(auth);
 
-  // FORM SUBMIT
   const form = document.getElementById("supportForm");
+  const statusMsg = document.getElementById("statusMsg");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    statusMsg.textContent = "Sending message...";
 
     try {
       await addDoc(collection(db, "supportMessages"), {
-        name: document.getElementById("name").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        message: document.getElementById("message").value.trim(),
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        message: form.message.value.trim(),
         createdAt: serverTimestamp(),
         source: "help-and-support",
-        uid: auth.currentUser?.uid || null
+        uid: auth.currentUser.uid
       });
 
-      alert("Message sent successfully ✅");
+      statusMsg.textContent = "Message sent successfully ✅";
+      statusMsg.className = "text-sm text-green-500 text-center mt-3";
       form.reset();
 
     } catch (err) {
-      console.error("Firestore error:", err);
-      alert("Failed to send message ❌");
+      console.error(err);
+      statusMsg.textContent = "Failed to send message ❌";
+      statusMsg.className = "text-sm text-red-500 text-center mt-3";
     }
   });
 </script>
