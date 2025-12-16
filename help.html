@@ -48,15 +48,15 @@
       <div class="space-y-3">
         <details class="bg-dark p-4 rounded-lg border border-gray-700">
           <summary class="font-semibold cursor-pointer">How can I track my orders?</summary>
-          <p class="mt-2 text-gray-400">You can track your orders using the Delivery Tracking page in your account.</p>
+          <p class="mt-2 text-gray-400">You can track your orders using the Delivery Tracking page.</p>
         </details>
         <details class="bg-dark p-4 rounded-lg border border-gray-700">
           <summary class="font-semibold cursor-pointer">How can I return or exchange items?</summary>
-          <p class="mt-2 text-gray-400">Please contact our support team via live chat or email for assistance with returns or exchanges.</p>
+          <p class="mt-2 text-gray-400">Contact our support team via live chat or email for assistance.</p>
         </details>
         <details class="bg-dark p-4 rounded-lg border border-gray-700">
           <summary class="font-semibold cursor-pointer">Payment methods supported?</summary>
-          <p class="mt-2 text-gray-400">We accept all major debit and credit cards, as well as mobile payment options.</p>
+          <p class="mt-2 text-gray-400">We accept all major debit/credit cards and mobile payments.</p>
         </details>
       </div>
     </section>
@@ -69,12 +69,15 @@
                class="w-full p-3 rounded-lg bg-dark border border-gray-700 text-white outline-none"/>
         <input type="email" id="email" placeholder="Your Email" required
                class="w-full p-3 rounded-lg bg-dark border border-gray-700 text-white outline-none"/>
+        <input type="text" id="phone" placeholder="Phone Number (optional)"
+               class="w-full p-3 rounded-lg bg-dark border border-gray-700 text-white outline-none"/>
         <textarea id="message" placeholder="Your Message" required
                   class="w-full p-3 rounded-lg bg-dark border border-gray-700 text-white outline-none" rows="5"></textarea>
         <button type="submit" class="w-full bg-brand text-black py-3 rounded-lg font-semibold hover:bg-orange-500 transition">
           Send Message
         </button>
       </form>
+      <p class="text-xs text-gray-400 mt-2">Messages are saved and will appear in the admin inbox.</p>
     </section>
 
     <!-- LIVE CHAT -->
@@ -89,10 +92,10 @@
 
   </main>
 
-  <!-- FIREBASE AUTH -->
+  <!-- FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -104,19 +107,31 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Protect page: redirect if not signed in
-    onAuthStateChanged(auth, (user) => {
-      if (!user) window.location.href = "login.html";
-    });
-
-    // Simple contact form alert (replace with backend or email sending)
     const form = document.getElementById("supportForm");
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      alert("Thank you! Your message has been sent.");
-      form.reset();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("phone").value;
+      const message = document.getElementById("message").value;
+
+      try {
+        await addDoc(collection(db, "supportMessages"), {
+          name,
+          email,
+          phone: phone || "",
+          message,
+          createdAt: serverTimestamp(),
+          source: "help-and-support"
+        });
+        alert("Thank you! Your message has been sent.");
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        alert("Failed to send message. Try again.");
+      }
     });
   </script>
 
