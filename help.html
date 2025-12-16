@@ -1,1 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help & Support — Blackwear</title>
 
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+<!-- HEADER -->
+<header class="flex justify-between items-center p-5 bg-dark shadow-lg">
+  <h1 class="text-2xl font-bold text-brand">Help & Support</h1>
+  <a href="index.html"
+     class="bg-brand text-black px-4 py-2 rounded-lg font-semibold hover:bg-orange-500 transition">
+    Back
+  </a>
+</header>
+
+<!-- MAIN -->
+<main class="p-5 max-w-4xl mx-auto space-y-6">
+
+  <!-- FAQ -->
+  <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-3">Frequently Asked Questions</h2>
+    <div class="space-y-3">
+      <details class="bg-dark p-4 rounded-lg border border-gray-700">
+        <summary class="font-semibold cursor-pointer">How can I track my orders?</summary>
+        <p class="mt-2 text-gray-400">You can track your orders using the Delivery Tracking page.</p>
+      </details>
+
+      <details class="bg-dark p-4 rounded-lg border border-gray-700">
+        <summary class="font-semibold cursor-pointer">How can I return or exchange items?</summary>
+        <p class="mt-2 text-gray-400">Contact our support team via live chat or email.</p>
+      </details>
+
+      <details class="bg-dark p-4 rounded-lg border border-gray-700">
+        <summary class="font-semibold cursor-pointer">Payment methods supported?</summary>
+        <p class="mt-2 text-gray-400">We accept debit cards, credit cards, and mobile payments.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- CONTACT FORM -->
+  <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-3">Contact Us</h2>
+
+    <form id="supportForm" class="space-y-4">
+      <input id="name" type="text" placeholder="Your Name" required
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
+
+      <input id="email" type="email" placeholder="Your Email" required
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
+
+      <input id="phone" type="text" placeholder="Phone Number (optional)"
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none">
+
+      <textarea id="message" rows="5" placeholder="Your Message" required
+        class="w-full p-3 rounded-lg bg-dark border border-gray-700 outline-none"></textarea>
+
+      <button type="submit"
+        class="w-full bg-brand text-black py-3 rounded-lg font-semibold hover:bg-orange-500 transition">
+        Send Message
+      </button>
+    </form>
+
+    <p id="statusMsg" class="text-sm text-center mt-3 text-gray-400"></p>
+  </section>
+
+  <!-- LIVE CHAT -->
+  <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg text-center">
+    <h2 class="text-xl font-semibold text-brand mb-3">Live Chat</h2>
+    <p class="text-gray-400 mb-4">Chat directly with Danny on WhatsApp.</p>
+    <a href="https://wa.me/2349036470778" target="_blank"
+       class="inline-block bg-green-600 hover:bg-green-700 text-black font-semibold py-3 px-6 rounded-lg transition">
+      💬 Live Chat with Danny
+    </a>
+  </section>
+
+</main>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // 🔐 Anonymous Login (CRITICAL)
+  await signInAnonymously(auth);
+
+  const form = document.getElementById("supportForm");
+  const statusMsg = document.getElementById("statusMsg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusMsg.textContent = "Sending message...";
+
+    try {
+      await addDoc(collection(db, "supportMessages"), {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        message: form.message.value.trim(),
+        createdAt: serverTimestamp(),
+        source: "help-and-support",
+        uid: auth.currentUser.uid
+      });
+
+      statusMsg.textContent = "Message sent successfully ✅";
+      statusMsg.className = "text-sm text-green-500 text-center mt-3";
+      form.reset();
+
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = "Failed to send message ❌";
+      statusMsg.className = "text-sm text-red-500 text-center mt-3";
+    }
+  });
+</script>
+
+</body>
+</html>
