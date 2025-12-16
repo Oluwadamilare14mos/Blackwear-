@@ -24,6 +24,7 @@
 
   <style>
     body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+    .clickable:hover { border-color:#ff7f00; transform:translateY(-2px); transition:.2s; cursor:pointer; }
   </style>
 </head>
 
@@ -46,15 +47,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -66,7 +59,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 
 const emptyState = document.getElementById("emptyState");
@@ -91,72 +83,63 @@ function statusBadge(status){
   return map[status] || "bg-gray-600";
 }
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) return location.href = "login.html";
+// Load all orders (no login)
+const q = query(collection(db, "orders"), orderBy("createdAt","desc"));
+onSnapshot(q, (snap) => {
+  deliveryList.innerHTML = "";
 
-  const q = query(
-    collection(db, "orders"),
-    where("userId", "==", user.uid),
-    orderBy("createdAt", "desc")
-  );
+  if (snap.empty) {
+    emptyState.classList.remove("hidden");
+    deliveryList.classList.add("hidden");
+    return;
+  }
 
-  onSnapshot(q, (snap) => {
-    deliveryList.innerHTML = "";
+  emptyState.classList.add("hidden");
+  deliveryList.classList.remove("hidden");
 
-    if (snap.empty) {
-      emptyState.classList.remove("hidden");
-      deliveryList.classList.add("hidden");
-      return;
-    }
+  snap.forEach(doc => {
+    const o = doc.data();
+    const progress = progressMap[o.status] || 0;
 
-    emptyState.classList.add("hidden");
-    deliveryList.classList.remove("hidden");
+    const el = document.createElement("div");
+    el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg clickable";
 
-    snap.forEach(doc => {
-      const o = doc.data();
-      const progress = progressMap[o.status] || 0;
+    el.onclick = () => {
+      if(o.productId) window.location.href = "product.html?id=" + o.productId;
+    };
 
-      const el = document.createElement("div");
-      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+    el.innerHTML = `
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-semibold text-brand">Order #${doc.id.slice(0,8).toUpperCase()}</h3>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(o.status)}">
+          ${(o.status || "pending").replaceAll("_"," ").toUpperCase()}
+        </span>
+      </div>
 
-      el.innerHTML = `
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="font-semibold text-brand">
-            Order #${doc.id.slice(0,8).toUpperCase()}
-          </h3>
-          <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(o.status)}">
-            ${(o.status || "pending").replaceAll("_"," ").toUpperCase()}
-          </span>
+      <div class="flex items-center gap-4 mb-4">
+        <img src="${o.image || 'https://via.placeholder.com/80'}"
+             class="w-16 h-16 rounded-lg object-cover border border-gray-700"/>
+        <div>
+          <p class="font-semibold">${o.productName || "Product"}</p>
+          <p class="text-sm text-gray-400">₦${Number(o.price||0).toLocaleString()}</p>
         </div>
+      </div>
 
-        <div class="flex items-center gap-4 mb-4">
-          <img src="${o.image || 'https://via.placeholder.com/80'}"
-               class="w-16 h-16 rounded-lg object-cover border border-gray-700"/>
-          <div>
-            <p class="font-semibold">${o.productName || "Product"}</p>
-            <p class="text-sm text-gray-400">₦${Number(o.price||0).toLocaleString()}</p>
-          </div>
+      <!-- PROGRESS BAR -->
+      <div class="mb-3">
+        <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div class="bg-brand h-2 transition-all duration-500" style="width:${progress}%"></div>
         </div>
+        <p class="text-xs text-gray-400 mt-1">Delivery progress: ${progress}%</p>
+      </div>
 
-        <!-- PROGRESS BAR -->
-        <div class="mb-3">
-          <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-            <div class="bg-brand h-2 transition-all duration-500"
-                 style="width:${progress}%"></div>
-          </div>
-          <p class="text-xs text-gray-400 mt-1">
-            Delivery progress: ${progress}%
-          </p>
-        </div>
+      <div class="text-xs text-gray-400 flex justify-between">
+        <span>Ordered: ${o.createdAt?.toDate().toLocaleDateString() || ""}</span>
+        <span>Est. Delivery: ${o.estimatedDelivery || "—"}</span>
+      </div>
+    `;
 
-        <div class="text-xs text-gray-400 flex justify-between">
-          <span>Ordered: ${o.createdAt?.toDate().toLocaleDateString() || ""}</span>
-          <span>Est. Delivery: ${o.estimatedDelivery || "—"}</span>
-        </div>
-      `;
-
-      deliveryList.appendChild(el);
-    });
+    deliveryList.appendChild(el);
   });
 });
 </script>
