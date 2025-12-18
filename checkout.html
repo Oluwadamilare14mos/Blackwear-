@@ -13,13 +13,11 @@ header h1{color:#ff7f00;font-size:20px}
 .container{max-width:900px;margin:auto;padding:20px;display:grid;gap:20px}
 .card{background:#141414;border:1px solid #1f1f1f;border-radius:16px;padding:16px}
 .card h2{color:#ff7f00;font-size:18px;margin-bottom:12px}
-input,textarea,select{width:100%;padding:12px;margin-bottom:10px;border-radius:12px;border:1px solid #2a2a2a;background:#000;color:#fff;outline:none}
+input,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:12px;border:1px solid #2a2a2a;background:#000;color:#fff}
 .order-item{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
 .total{font-size:20px;font-weight:bold;color:#ff7f00}
-.btn{width:100%;padding:14px;border:none;border-radius:16px;background:#ff7f00;color:#000;font-weight:bold;font-size:16px;cursor:pointer;margin-top:10px}
-.payment-option{margin-bottom:12px;padding:12px;border-radius:12px;background:#1a1a1a;cursor:pointer;border:1px solid #2a2a2a}
-.payment-option:hover{border-color:#ff7f00}
-.payment-option input{margin-right:10px}
+.btn{width:100%;padding:14px;border:none;border-radius:16px;background:#ff7f00;color:#000;font-weight:bold;font-size:16px;cursor:pointer}
+.payment-option{margin-bottom:12px;padding:12px;border-radius:12px;background:#1a1a1a;border:1px solid #2a2a2a}
 .mobile-bank-info{background:#000;color:#ff7f00;padding:10px;border-radius:12px;margin-top:8px;font-size:14px}
 </style>
 </head>
@@ -32,15 +30,13 @@ input,textarea,select{width:100%;padding:12px;margin-bottom:10px;border-radius:1
 
 <div class="container">
 
-<!-- CUSTOMER DETAILS -->
 <div class="card">
 <h2>Customer Details</h2>
-<input type="text" id="name" placeholder="Full Name">
-<input type="tel" id="phone" placeholder="Phone Number">
+<input id="name" placeholder="Full Name">
+<input id="phone" placeholder="Phone Number">
 <textarea id="address" placeholder="Delivery Address"></textarea>
 </div>
 
-<!-- ORDER SUMMARY -->
 <div class="card">
 <h2>Order Summary</h2>
 <div id="items"></div>
@@ -48,7 +44,6 @@ input,textarea,select{width:100%;padding:12px;margin-bottom:10px;border-radius:1
 <p>Total: <span class="total" id="total">₦0</span></p>
 </div>
 
-<!-- PAYMENT OPTIONS -->
 <div class="card">
 <h2>Payment Method</h2>
 
@@ -59,24 +54,17 @@ input,textarea,select{width:100%;padding:12px;margin-bottom:10px;border-radius:1
 <div class="payment-option">
 <label><input type="radio" name="payment" value="mobilebank"> Mobile Bank</label>
 <div class="mobile-bank-info" id="mobileBankInfo" style="display:none">
-Bank Name: Olaniyi Funky / Opay<br>
-Account: 8117854139<br>
-Please transfer and send proof to support.
+Bank: Olaniyi Funky / Opay<br>
+Account: 8117854139
 </div>
 </div>
 
+<button class="btn" id="payBtn">Pay Now</button>
 </div>
 
-<button class="btn" onclick="processPayment()">Pay Now</button>
-
-</div>
-
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-
-<!-- PAYSTACK -->
 <script src="https://js.paystack.co/v1/inline.js"></script>
 
 <script>
@@ -89,103 +77,89 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let cartItems = [];
-let totalPrice = 0;
+let cartItems=[], totalPrice=0, paying=false;
 
-auth.onAuthStateChanged(async user => {
-  if (!user) await auth.signInAnonymously();
+auth.onAuthStateChanged(async u=>{
+  if(!u) await auth.signInAnonymously();
   loadCart();
 });
 
 async function loadCart(){
-  const user = auth.currentUser;
   const snap = await db.collection("cart")
-    .where("userId","==",user.uid)
-    .get();
+    .where("userId","==",auth.currentUser.uid).get();
 
-  const list = document.getElementById("items");
-  list.innerHTML = "";
-  cartItems = [];
-  totalPrice = 0;
+  cartItems=[]; totalPrice=0;
+  items.innerHTML="";
 
-  snap.forEach(doc=>{
-    const d = doc.data();
-    cartItems.push({id:doc.id, ...d});
-    totalPrice += Number(d.price);
-
-    const row = document.createElement("div");
-    row.className = "order-item";
-    row.innerHTML = `
-      <span>${d.name}</span>
-      <span>₦${Number(d.price).toLocaleString()}</span>
-    `;
-    list.appendChild(row);
+  snap.forEach(d=>{
+    const p=d.data();
+    cartItems.push({id:d.id,...p});
+    totalPrice+=Number(p.price);
+    items.innerHTML+=`
+      <div class="order-item">
+        <span>${p.name}</span>
+        <span>₦${Number(p.price).toLocaleString()}</span>
+      </div>`;
   });
 
-  document.getElementById("total").textContent =
-    "₦" + totalPrice.toLocaleString();
+  total.textContent="₦"+totalPrice.toLocaleString();
 }
 
-// Show mobile bank info if selected
-const radioButtons = document.querySelectorAll('input[name="payment"]');
-radioButtons.forEach(r=>{
-  r.addEventListener('change', ()=>{
-    document.getElementById('mobileBankInfo').style.display = r.value==='mobilebank' ? 'block' : 'none';
-  });
+document.querySelectorAll('input[name="payment"]').forEach(r=>{
+  r.onchange=()=>mobileBankInfo.style.display=
+    r.value==="mobilebank"?"block":"none";
 });
 
-function processPayment(){
-  const name = document.getElementById("name").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-  const address = document.getElementById("address").value.trim();
-  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+payBtn.onclick=()=>{
+  if(paying) return;
 
-  if(!name || !phone || !address){
-    alert("Please fill all details");
-    return;
+  const n=name.value.trim();
+  const p=phone.value.trim();
+  const a=address.value.trim();
+  if(!n||!p||!a) return alert("Fill all details");
+  if(cartItems.length===0) return alert("Cart empty");
+
+  paying=true;
+  const method=document.querySelector('input[name="payment"]:checked').value;
+
+  if(method==="paystack"){
+    const ref="BW-"+Date.now();
+    PaystackPop.setup({
+      key:"pk_live_f4916e7d98151010a57a6c3b5d12437af8a144af",
+      email:p+"@blackwear.com",
+      amount:totalPrice*100,
+      currency:"NGN",
+      ref,
+      callback:()=>completeOrder(ref,"paid_unverified"),
+      onClose:()=>paying=false
+    }).openIframe();
+  }else{
+    alert("Transfer ₦"+totalPrice.toLocaleString());
+    completeOrder("BANK-"+Date.now(),"awaiting_confirmation");
   }
+};
 
-  const user = auth.currentUser;
-
-  if(paymentMethod==='paystack'){
-    let handler = PaystackPop.setup({
-      key: 'pk_test_ad3148006e25bf014920d24e7c3589441d1a6f17',
-      email: phone+'@example.com', // dummy email if user email unknown
-      amount: totalPrice*100, // in kobo
-      currency: "NGN",
-      ref: ''+Math.floor(Math.random()*1000000000+1),
-      callback: async function(response){
-        await finalizeOrder(user, name, phone, address, 'Paystack');
-        alert("Payment successful! Transaction ref: " + response.reference);
-        window.location.href = "my-order.html";
-      },
-      onClose: function(){
-        alert("Payment cancelled.");
-      }
-    });
-    handler.openIframe();
-  } else if(paymentMethod==='mobilebank'){
-    alert("Please transfer ₦" + totalPrice.toLocaleString() + " to the bank below and send proof to support:\n\nBank: Olaniyi Funky / Opay\nAccount: 8117854139");
-    finalizeOrder(user, name, phone, address, 'Mobile Bank');
-  }
-}
-
-async function finalizeOrder(user, name, phone, address, method){
-  await db.collection("orders").add({
-    userId: user.uid,
-    customer: { name, phone, address },
-    items: cartItems,
-    total: totalPrice,
-    paymentMethod: method,
-    status: "pending",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+async function completeOrder(reference,status){
+  const orderRef=await db.collection("orders").add({
+    userId:auth.currentUser.uid,
+    customer:{name:name.value,phone:phone.value,address:address.value},
+    items:cartItems,
+    total:totalPrice,
+    payment:{
+      method:"Paystack",
+      reference,
+      status
+    },
+    orderStatus:"pending_admin_approval",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  const batch = db.batch();
-  cartItems.forEach(i=>{
-    batch.delete(db.collection("cart").doc(i.id));
-  });
+  const batch=db.batch();
+  cartItems.forEach(i=>batch.delete(db.collection("cart").doc(i.id)));
   await batch.commit();
+
+  alert("Order placed successfully!");
+  window.location.href="my-order.html?id="+orderRef.id;
 }
 </script>
 </body>
