@@ -82,8 +82,8 @@ const db = firebase.firestore();
 const nameEl = document.getElementById("name");
 const phoneEl = document.getElementById("phone");
 const addressEl = document.getElementById("address");
-const items = document.getElementById("items");
-const total = document.getElementById("total");
+const itemsEl = document.getElementById("items");
+const totalEl = document.getElementById("total");
 const mobileBankInfo = document.getElementById("mobileBankInfo");
 const payBtn = document.getElementById("payBtn");
 
@@ -91,36 +91,29 @@ let cartItems = [];
 let totalPrice = 0;
 let paying = false;
 
-auth.onAuthStateChanged(async user => {
-  if (!user) await auth.signInAnonymously();
+auth.onAuthStateChanged(async user=>{
+  if(!user) await auth.signInAnonymously();
   loadCart();
 });
 
 async function loadCart(){
   const user = auth.currentUser;
-  const snap = await db.collection("cart")
-    .where("userId","==",user.uid)
-    .get();
-
+  const snap = await db.collection("cart").where("userId","==",user.uid).get();
   cartItems = [];
   totalPrice = 0;
-  items.innerHTML = "";
-
-  snap.forEach(doc => {
+  itemsEl.innerHTML = "";
+  snap.forEach(doc=>{
     const d = doc.data();
     cartItems.push({id: doc.id, ...d});
     totalPrice += Number(d.price);
-
     const row = document.createElement("div");
     row.className = "order-item";
     row.innerHTML = `<span>${d.name}</span><span>₦${Number(d.price).toLocaleString()}</span>`;
-    items.appendChild(row);
+    itemsEl.appendChild(row);
   });
-
-  total.textContent = "₦" + totalPrice.toLocaleString();
+  totalEl.textContent = "₦" + totalPrice.toLocaleString();
 }
 
-// Show mobile bank info
 document.querySelectorAll('input[name="payment"]').forEach(radio=>{
   radio.addEventListener("change", ()=>{
     mobileBankInfo.style.display = radio.value==="mobilebank" ? "block" : "none";
@@ -129,12 +122,12 @@ document.querySelectorAll('input[name="payment"]').forEach(radio=>{
 
 payBtn.onclick = async function(){
   if(paying) return;
-  const n = nameEl.value.trim();
-  const p = phoneEl.value.trim();
-  const a = addressEl.value.trim();
+  const name = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  const address = addressEl.value.trim();
   const method = document.querySelector('input[name="payment"]:checked').value;
 
-  if(!n || !p || !a){ alert("Please fill all details"); return; }
+  if(!name || !phone || !address){ alert("Please fill all details"); return; }
   if(cartItems.length===0){ alert("Cart is empty"); return; }
 
   paying = true;
@@ -144,14 +137,14 @@ payBtn.onclick = async function(){
   if(method==="paystack"){
     const handler = PaystackPop.setup({
       key: "pk_live_f4916e7d98151010a57a6c3b5d12437af8a144af",
-      email: p+"@blackwear.com",
+      email: phone+"@blackwear.com",
       amount: totalPrice*100,
       currency: "NGN",
       ref: "BW-"+Date.now(),
       callback: async function(response){
-        await finalizeOrder(user, n, p, a, "Paystack", response.reference, "paid_unverified");
+        await finalizeOrder(user, name, phone, address, "Paystack", response.reference, "paid_unverified");
         alert("Payment successful! Ref: " + response.reference);
-        window.location.href = "my-order.html";
+        window.location.href="my-order.html";
       },
       onClose: function(){
         paying = false;
@@ -161,8 +154,8 @@ payBtn.onclick = async function(){
     handler.openIframe();
   } else {
     alert("Please transfer ₦"+totalPrice.toLocaleString()+" to the bank above and send proof to support.");
-    await finalizeOrder(user, n, p, a, "Mobile Bank", "BANK-"+Date.now(), "awaiting_confirmation");
-    window.location.href = "my-order.html";
+    await finalizeOrder(user, name, phone, address, "Mobile Bank", "BANK-"+Date.now(), "awaiting_confirmation");
+    window.location.href="my-order.html";
   }
 }
 
