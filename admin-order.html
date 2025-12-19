@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Orders | Blackwear</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  background:#0b0b0b;
+  color:#fff;
+  font-family:system-ui;
+}
+h1{color:#ff7f00}
+.card{
+  background:#141414;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:14px;
+}
+.badge{
+  padding:4px 10px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:bold;
+}
+.pending{background:#444}
+.unverified{background:#ff7f00;color:#000}
+.verified{background:#22c55e;color:#000}
+.shipped{background:#3b82f6}
+.delivered{background:#10b981}
+.btn{
+  margin-top:10px;
+  padding:10px 14px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.approve{background:#22c55e;color:#000}
+.ship{background:#3b82f6;color:#fff}
+.deliver{background:#10b981;color:#000}
+.reject{background:#ef4444;color:#fff}
+.small{font-size:13px;color:#bbb}
+</style>
+</head>
+
+<body>
+
+<h1>🛠 Blackwear Admin – Orders</h1>
+<div id="orders"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+/* ---------- FIREBASE ---------- */
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ---------- ADMIN LOGIN ---------- */
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    const email = prompt("Admin email:");
+    const pass  = prompt("Admin password:");
+    await auth.signInWithEmailAndPassword(email, pass);
+  }
+  loadOrders();
+});
+
+/* ---------- LOAD ORDERS ---------- */
+function loadOrders(){
+  db.collection("orders")
+    .orderBy("createdAt","desc")
+    .onSnapshot(snap=>{
+      const box = document.getElementById("orders");
+      box.innerHTML = "";
+
+      snap.forEach(doc=>{
+        const o = doc.data();
+        const id = doc.id;
+
+        const paymentStatus = o.payment?.status || "pending";
+        const orderStatus = o.orderStatus || "pending";
+
+        box.innerHTML += `
+          <div class="card">
+            <div class="small">
+              <strong>Order ID:</strong> ${id}<br>
+              <strong>Customer:</strong> ${o.customer.name} (${o.customer.phone})<br>
+              <strong>Address:</strong> ${o.customer.address}
+            </div>
+
+            <p><strong>Total:</strong> ₦${Number(o.total).toLocaleString()}</p>
+
+            <span class="badge ${
+              paymentStatus==="paid_unverified" ? "unverified" :
+              paymentStatus==="paid_verified" ? "verified" : "pending"
+            }">
+              ${paymentStatus.replace("_"," ").toUpperCase()}
+            </span>
+
+            <span class="badge ${
+              orderStatus==="shipped" ? "shipped" :
+              orderStatus==="delivered" ? "delivered" : "pending"
+            }">
+              ${orderStatus.toUpperCase()}
+            </span>
+
+            <div style="margin-top:10px">
+              ${paymentStatus==="paid_unverified" ? `
+                <button class="btn approve" onclick="approvePayment('${id}')">
+                  Approve Payment
+                </button>
+              ` : ""}
+
+              ${orderStatus==="pending" && paymentStatus==="paid_verified" ? `
+                <button class="btn ship" onclick="updateStatus('${id}','shipped')">
+                  Mark as Shipped
+                </button>
+              ` : ""}
+
+              ${orderStatus==="shipped" ? `
+                <button class="btn deliver" onclick="updateStatus('${id}','delivered')">
+                  Mark as Delivered
+                </button>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      });
+    });
+}
+
+/* ---------- ACTIONS ---------- */
+function approvePayment(id){
+  db.collection("orders").doc(id).update({
+    "payment.status":"paid_verified",
+    "payment.verified":true,
+    "payment.approvedByAdmin":true
+  });
+}
+
+function updateStatus(id,status){
+  db.collection("orders").doc(id).update({
+    orderStatus: status
+  });
+}
+</script>
+</body>
+</html>
