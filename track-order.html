@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Track Order | Blackwear</title>
+
+<style>
+body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
+.card{max-width:800px;margin:auto;background:#141414;border-radius:14px;padding:18px}
+h1{color:#ff7f00;margin-bottom:10px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
+.btn{margin-top:10px;padding:12px;border:none;border-radius:12px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
+.section{margin-top:18px;border-top:1px solid #222;padding-top:12px}
+.status{padding:10px;border-radius:10px;margin-top:6px;font-weight:bold}
+.pending{background:#222;color:#ffcc00}
+.success{background:#002b1b;color:#00ff99}
+.error{background:#2b0000;color:#ff6666}
+.row{margin-top:6px;font-size:14px}
+.label{color:#999}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1>Track Your Order</h1>
+<p>Enter your Order ID to see the current status.</p>
+
+<input id="orderId" placeholder="Example: BW-1700000000000">
+<button class="btn" onclick="trackOrder()">Track Order</button>
+
+<div id="result"></div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
+
+const db = firebase.firestore();
+const resultBox = document.getElementById("result");
+
+function statusBox(text,type){
+  return `<div class="status ${type}">${text}</div>`;
+}
+
+async function trackOrder(){
+  const id = document.getElementById("orderId").value.trim();
+  if(!id) return alert("Enter order ID");
+
+  resultBox.innerHTML = "Checking order...";
+
+  try{
+    const snap = await db.collection("orders")
+      .where("payment.ref","==",id)
+      .limit(1)
+      .get();
+
+    if(snap.empty){
+      resultBox.innerHTML = statusBox("Order not found","error");
+      return;
+    }
+
+    const order = snap.docs[0].data();
+
+    let paymentStatus = order.payment.status;
+    let adminStatus = order.orderStatus || "pending";
+    let deliveryStatus = order.deliveryStatus || "processing";
+
+    resultBox.innerHTML = `
+      <div class="section">
+        <h3>Order Summary</h3>
+        <div class="row"><span class="label">Total:</span> ₦${order.total.toLocaleString()}</div>
+        <div class="row"><span class="label">Payment Method:</span> ${order.payment.method}</div>
+        <div class="row"><span class="label">Reference:</span> ${order.payment.ref}</div>
+      </div>
+
+      <div class="section">
+        <h3>Payment Status</h3>
+        ${paymentStatus==="paid" || paymentStatus==="paid_verified"
+          ? statusBox("Payment confirmed","success")
+          : statusBox("Awaiting payment verification","pending")}
+      </div>
+
+      <div class="section">
+        <h3>Admin Approval</h3>
+        ${adminStatus==="approved"
+          ? statusBox("Order approved by admin","success")
+          : statusBox("Pending admin approval","pending")}
+      </div>
+
+      <div class="section">
+        <h3>Delivery Status</h3>
+        ${deliveryStatus==="delivered"
+          ? statusBox("Delivered","success")
+          : statusBox(deliveryStatus,"pending")}
+      </div>
+    `;
+  }catch(e){
+    console.error(e);
+    resultBox.innerHTML = statusBox("Error loading order","error");
+  }
+}
+</script>
+</body>
+</html>
