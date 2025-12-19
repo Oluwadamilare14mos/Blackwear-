@@ -46,6 +46,9 @@ Account: 8117854139
 <!-- Paystack -->
 <script src="https://js.paystack.co/v1/inline.js"></script>
 
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -58,6 +61,8 @@ firebase.initializeApp({
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
 });
+
+emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // <-- ADD THIS
 
 const PAYSTACK_KEY = "pk_live_f4916e7d98151010a57a6c3b5d12437af8a144af";
 
@@ -107,38 +112,33 @@ document.querySelectorAll('input[name="pay"]').forEach(r=>{
 
 /* ---------- PAY NOW ---------- */
 el("payNow").onclick = ()=>{
-  try{
-    const name = el("name").value.trim();
-    const phone = el("phone").value.trim();
-    const address = el("address").value.trim();
-    const method = document.querySelector('input[name="pay"]:checked').value;
+  const name = el("name").value.trim();
+  const phone = el("phone").value.trim();
+  const address = el("address").value.trim();
+  const method = document.querySelector('input[name="pay"]:checked').value;
 
-    if(!name||!phone||!address) return alert("Fill all details");
-    if(!CART.length) return alert("Cart empty");
+  if(!name||!phone||!address) return alert("Fill all details");
+  if(!CART.length) return alert("Cart empty");
 
-    if(method==="paystack"){
-      PaystackPop.setup({
-        key: PAYSTACK_KEY,
-        email: phone+"@blackwear.com",
-        amount: TOTAL * 100,
-        currency: "NGN",
-        ref: "BW-" + Date.now(),
-        callback: res => completeOrder("Paystack",res.reference,"paid"),
-        onClose: ()=> alert("Payment cancelled")
-      }).openIframe();
-    }else{
-      alert("Transfer ₦"+TOTAL.toLocaleString()+" then contact support");
-      completeOrder("Bank","BANK-"+Date.now(),"pending");
-    }
-  }catch(e){
-    alert("Error: "+e.message);
-    console.error(e);
+  if(method==="paystack"){
+    PaystackPop.setup({
+      key: PAYSTACK_KEY,
+      email: phone+"@blackwear.com",
+      amount: TOTAL * 100,
+      currency: "NGN",
+      ref: "BW-" + Date.now(),
+      callback: res => completeOrder("Paystack",res.reference,"paid_unverified"),
+      onClose: ()=> alert("Payment cancelled")
+    }).openIframe();
+  }else{
+    alert("Transfer ₦"+TOTAL.toLocaleString()+" then contact support");
+    completeOrder("Bank","BANK-"+Date.now(),"pending");
   }
 };
 
 /* ---------- SAVE ORDER ---------- */
-async function completeOrder(method,ref,status){
-  await db.collection("orders").add({
+async function completeOrder(method,ref,paymentStatus){
+  const orderRef = await db.collection("orders").add({
     userId: auth.currentUser.uid,
     customer:{
       name: el("name").value,
@@ -147,9 +147,18 @@ async function completeOrder(method,ref,status){
     },
     items: CART,
     total: TOTAL,
-    payment:{method,ref,status},
+    orderStatus: "pending",
+    payment:{
+      method,
+      reference: ref,
+      status: paymentStatus,
+      verified: false,
+      approvedByAdmin: false
+    },
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+
+  sendReceipt(orderRef.id);
 
   const batch = db.batch();
   CART.forEach(i=>batch.delete(db.collection("cart").doc(i.id)));
@@ -157,6 +166,15 @@ async function completeOrder(method,ref,status){
 
   alert("Order placed successfully");
   location.href="my-order.html";
+}
+
+/* ---------- EMAIL RECEIPT ---------- */
+function sendReceipt(orderId){
+  emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{
+    order_id: orderId,
+    total: TOTAL,
+    customer: el("name").value
+  });
 }
 </script>
 </body>
