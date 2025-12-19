@@ -68,6 +68,27 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+ async function verifyAdmin(user){
+  const adminDoc = await db.collection("admins").doc(user.email).get();
+  if(!adminDoc.exists || adminDoc.data().active !== true){
+    alert("Access denied. Admins only.");
+    auth.signOut();
+    location.href = "index.html";
+  }
+}
+
+/* Replace your auth.onAuthStateChanged with this */
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    const email = prompt("Admin email:");
+    const pass  = prompt("Admin password:");
+    await auth.signInWithEmailAndPassword(email, pass);
+  }else{
+    await verifyAdmin(user);
+    loadOrders();
+  }
+}); 
+
 /* ---------- ADMIN LOGIN ---------- */
 auth.onAuthStateChanged(async user=>{
   if(!user){
