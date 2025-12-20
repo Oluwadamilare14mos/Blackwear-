@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Admin Dashboard | Blackwear</title>
+<style>
+body{background:#0f0f0f;color:#fff;font-family:system-ui;padding:20px}
+.card{max-width:500px;margin:auto;background:#141414;padding:20px;border-radius:14px}
+button{width:100%;padding:14px;margin-top:12px;border:none;border-radius:12px;font-weight:bold}
+.orders{background:#ff7f00}
+.logout{background:#444;color:#fff}
+</style>
+</head>
+
+<body>
+<div class="card">
+<h2>Blackwear Admin</h2>
+
+<button class="orders" onclick="location.href='admin-order.html'">
+Manage Orders
+</button>
+
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* 🔐 ADMIN CHECK */
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    location.href="index.html";
+    return;
+  }
+
+  const snap = await db.collection("admins").doc(user.uid).get();
+  if(!snap.exists){
+    alert("Access denied");
+    location.href="index.html";
+  }
+});
+
+function logout(){
+  auth.signOut().then(()=>location.href="index.html");
+}
+</script>
+</body>
+</html>
