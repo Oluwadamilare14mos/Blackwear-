@@ -195,7 +195,7 @@ async function requestNotificationPermission() {
   try {
     await Notification.requestPermission();
     const token = await messaging.getToken({
-      vapidKey: "YOUR_PUBLIC_VAPID_KEY"
+      vapidKey: "BK8Y3DUVXJlxx1qGZYbV4MvlNcDtQCD54-KJcjxhf8QgK6aUO_XZblyIYOUtV_cLxsWxmLe9WZJH1dnGmu4CXwg"
     });
     console.log("FCM Token:", token);
     await db.collection("users").doc(auth.currentUser.uid).set(
