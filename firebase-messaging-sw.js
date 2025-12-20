@@ -7,7 +7,7 @@ firebase.initializeApp({
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31",
   messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  appId: "BK8Y3DUVXJlxx1qGZYbV4MvlNcDtQCD54-KJcjxhf8QgK6aUO_XZblyIYOUtV_cLxsWxmLe9WZJH1dnGmu4CXwg"
 });
 
 const messaging = firebase.messaging();
