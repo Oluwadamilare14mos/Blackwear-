@@ -205,6 +205,39 @@ async function requestNotificationPermission() {
     console.warn("Notification permission denied", err);
   }
 }
+
+  /* ================= NOTIFICATIONS ================= */
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/firebase-messaging-sw.js")
+    .then(reg => {
+      console.log("Service Worker registered");
+
+      const messaging = firebase.messaging();
+
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          messaging
+            .getToken({
+              vapidKey: "BK8Y3DUVXJlxx1qGZYbV4MvlNcDtQCD54-KJcjxhf8QgK6aUO_XZblyIYOUtV_cLxsWxmLe9WZJH1dnGmu4CXwg"
+            })
+            .then(token => {
+              console.log("FCM Token:", token);
+
+              if (firebase.auth().currentUser) {
+                firebase
+                  .firestore()
+                  .collection("users")
+                  .doc(firebase.auth().currentUser.uid)
+                  .set({ fcmToken: token }, { merge: true });
+              }
+            });
+        }
+      });
+    });
+}
+  
 </script>
 </body>
 </html>
