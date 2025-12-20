@@ -4,41 +4,17 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Admin Orders | Blackwear</title>
-
 <style>
-body{
-  margin:0;
-  padding:20px;
-  background:#0b0b0b;
-  color:#fff;
-  font-family:system-ui;
-}
+body{margin:0;padding:20px;background:#0b0b0b;color:#fff;font-family:system-ui}
 h1{color:#ff7f00}
-.card{
-  background:#141414;
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:14px;
-}
-.badge{
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:bold;
-}
+.card{background:#141414;padding:16px;border-radius:14px;margin-bottom:14px}
+.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:bold;margin-right:6px}
 .pending{background:#444}
 .unverified{background:#ff7f00;color:#000}
 .verified{background:#22c55e;color:#000}
 .shipped{background:#3b82f6}
 .delivered{background:#10b981}
-.btn{
-  margin-top:10px;
-  padding:10px 14px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-}
+.btn{margin-top:10px;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:bold}
 .approve{background:#22c55e;color:#000}
 .ship{background:#3b82f6;color:#fff}
 .deliver{background:#10b981;color:#000}
@@ -46,7 +22,6 @@ h1{color:#ff7f00}
 .small{font-size:13px;color:#bbb}
 </style>
 </head>
-
 <body>
 
 <h1>🛠 Blackwear Admin – Orders</h1>
@@ -56,6 +31,9 @@ h1{color:#ff7f00}
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <script>
 /* ---------- FIREBASE ---------- */
@@ -68,35 +46,47 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 
- async function verifyAdmin(user){
-  const adminDoc = await db.collection("admins").doc(user.email).get();
-  if(!adminDoc.exists || adminDoc.data().active !== true){
-    alert("Access denied. Admins only.");
+/* ---------- EMAILJS CONFIG ---------- */
+emailjs.init("service_wu4fetn"); // Your EmailJS service ID
+
+/* ---------- SECURE ADMIN VERIFICATION ---------- */
+async function verifyAdmin(user){
+  try {
+    const adminDoc = await db.collection("admins").doc(user.email).get();
+    if(!adminDoc.exists || adminDoc.data().active !== true){
+      alert("Access denied. Admins only.");
+      auth.signOut();
+      location.href = "index.html";
+      return false;
+    }
+    return true;
+  } catch(e) {
+    console.error(e);
+    alert("Error verifying admin.");
     auth.signOut();
     location.href = "index.html";
+    return false;
   }
 }
 
-/* Replace your auth.onAuthStateChanged with this */
+/* ---------- ADMIN AUTH ---------- */
 auth.onAuthStateChanged(async user=>{
   if(!user){
     const email = prompt("Admin email:");
     const pass  = prompt("Admin password:");
-    await auth.signInWithEmailAndPassword(email, pass);
+    if(!email || !pass) { alert("Credentials required"); return; }
+    try{
+      await auth.signInWithEmailAndPassword(email, pass);
+      const verified = await verifyAdmin(auth.currentUser);
+      if(verified) loadOrders();
+    }catch(e){
+      alert("Login failed: "+e.message);
+      location.href = "index.html";
+    }
   }else{
-    await verifyAdmin(user);
-    loadOrders();
+    const verified = await verifyAdmin(user);
+    if(verified) loadOrders();
   }
-}); 
-
-/* ---------- ADMIN LOGIN ---------- */
-auth.onAuthStateChanged(async user=>{
-  if(!user){
-    const email = prompt("Admin email:");
-    const pass  = prompt("Admin password:");
-    await auth.signInWithEmailAndPassword(email, pass);
-  }
-  loadOrders();
 });
 
 /* ---------- LOAD ORDERS ---------- */
@@ -169,13 +159,42 @@ function approvePayment(id){
     "payment.status":"paid_verified",
     "payment.verified":true,
     "payment.approvedByAdmin":true
-  });
+  }).then(()=>{
+    alert("Payment approved");
+    sendReceiptEmail(id);
+  }).catch(e=>console.error(e));
 }
 
 function updateStatus(id,status){
   db.collection("orders").doc(id).update({
     orderStatus: status
-  });
+  }).then(()=>{
+    alert("Order updated");
+    sendReceiptEmail(id);
+  }).catch(e=>console.error(e));
+}
+
+/* ---------- EMAIL RECEIPT ---------- */
+async function sendReceiptEmail(orderId){
+  try{
+    const doc = await db.collection("orders").doc(orderId).get();
+    if(!doc.exists) return;
+
+    const o = doc.data();
+    const templateParams = {
+      to_name: o.customer.name,
+      to_email: o.customer.email || o.customer.phone+"@blackwear.com",
+      order_id: o.orderId || orderId,
+      total: o.total,
+      status: o.orderStatus,
+      payment: o.payment?.status,
+      items: o.items.map(i=>`${i.name} × ${i.quantity || 1} — ₦${i.price}`).join("\n")
+    };
+
+    emailjs.send("service_wu4fetn","template_pjd78fl",templateParams)
+      .then(()=>console.log("Receipt sent to", templateParams.to_email))
+      .catch(e=>console.error("Email error:", e));
+  }catch(e){console.error(e);}
 }
 </script>
 </body>
