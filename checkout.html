@@ -51,6 +51,7 @@ Send proof to support after payment.
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js"></script>
 
 <!-- EmailJS (receipt ready) -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
@@ -69,6 +70,7 @@ const PAYSTACK_KEY = "pk_live_f4916e7d98151010a57a6c3b5d12437af8a144af";
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+const messaging = firebase.messaging();
 
 const el = id => document.getElementById(id);
 
@@ -80,6 +82,7 @@ let paying = false;
 auth.onAuthStateChanged(async user=>{
   if(!user) await auth.signInAnonymously();
   loadCart();
+  requestNotificationPermission();
 });
 
 /* ================= LOAD CART ================= */
@@ -143,7 +146,7 @@ el("payNow").onclick = ()=>{
   }
 };
 
-/* ================= COMPLETE ORDER (THE MAIN ONE) ================= */
+/* ================= COMPLETE ORDER ================= */
 async function completeOrder(method, reference, paymentStatus){
   const orderRef = await db.collection("orders").add({
     userId: auth.currentUser.uid,
@@ -185,6 +188,22 @@ async function completeOrder(method, reference, paymentStatus){
 
   alert("Order placed successfully!");
   location.href = "track-order.html?id=" + orderRef.id;
+}
+
+/* ================= FCM NOTIFICATIONS ================= */
+async function requestNotificationPermission() {
+  try {
+    await Notification.requestPermission();
+    const token = await messaging.getToken({
+      vapidKey: "YOUR_PUBLIC_VAPID_KEY"
+    });
+    console.log("FCM Token:", token);
+    await db.collection("users").doc(auth.currentUser.uid).set(
+      { fcmToken: token }, { merge: true }
+    );
+  } catch(err) {
+    console.warn("Notification permission denied", err);
+  }
 }
 </script>
 </body>
