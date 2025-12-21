@@ -101,13 +101,11 @@ async function loadCart(){
     const qty = Number(p.quantity || p.quality || 1);
 TOTAL += Number(p.price) * qty;
 
-    el("items").innerHTML += `
-      <div class="order-item">
-        <span>${p.name}</span>
-        <span>₦${Number(p.price).toLocaleString()}</span>
-      </div>`;
-  });
-
+el("items").innerHTML += `
+  <div class="order-item">
+    <span>${p.name} × ${qty}</span>
+    <span>₦${(p.price * qty).toLocaleString()}</span>
+  </div>`;
   el("total").textContent = "₦" + TOTAL.toLocaleString();
 }
 
