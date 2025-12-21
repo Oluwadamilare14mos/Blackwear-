@@ -98,7 +98,8 @@ async function loadCart(){
   snap.forEach(d=>{
     const p = d.data();
     CART.push({...p,id:d.id});
-    TOTAL += Number(p.price) * Number(p.quantity || 1);
+    const qty = Number(p.quantity || p.quality || 1);
+TOTAL += Number(p.price) * qty;
 
     el("items").innerHTML += `
       <div class="order-item">
