@@ -13,7 +13,7 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 .btn{margin-top:14px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
 .order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
 .total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{background:#000;padding:10px;border-radius:10px;color:#ff7f00;display:none;margin-top:10px}
+.bank{background:#000;padding:10px;border-radius:10px;color:#ff7f00;margin-top:10px}
 </style>
 </head>
 
@@ -32,27 +32,24 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 <div class="total" id="total">₦0</div>
 
 <h2>Payment</h2>
-<label><input type="radio" name="pay" value="paystack" checked> Paystack</label><br>
-<label><input type="radio" name="pay" value="bank"> Bank Transfer</label>
-
-<div class="bank" id="bankBox">
-Bank: Olaniyi Funky / Opay<br>
-Account: 8117854139<br>
-Send proof to support after payment.
+<div class="bank">
+<strong>Bank Transfer (Opay)</strong><br><br>
+Account Name: Olaniyi Funky<br>
+Bank: Opay<br>
+Account Number: 8117854139<br><br>
+After payment, click <b>Confirm Order</b>.<br>
+Send proof to support if requested.
 </div>
 
-<button class="btn" id="payNow">Pay Now</button>
+<button class="btn" id="confirmOrder">Confirm Order</button>
 </div>
-
-<!-- Paystack -->
-<script src="https://js.paystack.co/v1/inline.js"></script>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-<!-- EmailJS (receipt ready) -->
+<!-- EmailJS -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <script>
@@ -63,9 +60,7 @@ firebase.initializeApp({
   projectId: "blackwear-14a31"
 });
 
-emailjs.init("61XKawCOBMidGo2by"); // EmailJS public key
-
-const PAYSTACK_KEY = "pk_live_f4916e7d98151010a57a6c3b5d12437af8a144af";
+emailjs.init("61XKawCOBMidGo2by");
 
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -74,11 +69,13 @@ const el = id => document.getElementById(id);
 
 let CART = [];
 let TOTAL = 0;
-let paying = false;
+let submitting = false;
 
 /* ================= AUTH ================= */
 auth.onAuthStateChanged(async user=>{
-  if(!user) await auth.signInAnonymously();
+  if(!user){
+    await auth.signInAnonymously();
+  }
   loadCart();
 });
 
@@ -95,56 +92,45 @@ async function loadCart(){
   snap.forEach(d=>{
     const p = d.data();
     CART.push({...p,id:d.id});
-    TOTAL += Number(p.price);
+    TOTAL += Number(p.price) * (p.quantity || 1);
 
     el("items").innerHTML += `
       <div class="order-item">
-        <span>${p.name}</span>
+        <span>${p.productName || p.name}</span>
         <span>₦${Number(p.price).toLocaleString()}</span>
-      </div>`;
+      </div>
+    `;
   });
 
   el("total").textContent = "₦" + TOTAL.toLocaleString();
 }
 
-/* ================= PAYMENT SWITCH ================= */
-document.querySelectorAll('input[name="pay"]').forEach(r=>{
-  r.onchange = ()=> el("bankBox").style.display =
-    r.value==="bank" ? "block" : "none";
-});
-
-/* ================= PAY NOW ================= */
-el("payNow").onclick = ()=>{
-  if(paying) return;
+/* ================= CONFIRM ORDER ================= */
+el("confirmOrder").onclick = async ()=>{
+  if(submitting) return;
 
   const name = el("name").value.trim();
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
-  const method = document.querySelector('input[name="pay"]:checked').value;
 
-  if(!name || !phone || !address) return alert("Fill all details");
-  if(!CART.length) return alert("Cart empty");
-
-  paying = true;
-
-  if(method==="paystack"){
-    PaystackPop.setup({
-      key: PAYSTACK_KEY,
-      email: phone+"@blackwear.com",
-      amount: TOTAL * 100,
-      currency: "NGN",
-      ref: "BW-" + Date.now(),
-      callback: res => completeOrder("Paystack", res.reference, "paid_unverified"),
-      onClose: ()=> paying=false
-    }).openIframe();
-  }else{
-    alert("Transfer ₦"+TOTAL.toLocaleString()+" and send proof to support");
-    completeOrder("Bank", "BANK-"+Date.now(), "awaiting_confirmation");
+  if(!name || !phone || !address){
+    alert("Fill all customer details");
+    return;
   }
+
+  if(!CART.length){
+    alert("Your cart is empty");
+    return;
+  }
+
+  submitting = true;
+
+  completeOrder();
 };
 
-/* ================= COMPLETE ORDER (THE MAIN ONE) ================= */
-async function completeOrder(method, reference, paymentStatus){
+/* ================= COMPLETE ORDER ================= */
+async function completeOrder(){
+
   const orderRef = await db.collection("orders").add({
     userId: auth.currentUser.uid,
 
@@ -158,9 +144,9 @@ async function completeOrder(method, reference, paymentStatus){
     total: TOTAL,
 
     payment:{
-      method,
-      reference,
-      status: paymentStatus
+      method: "Opay Bank Transfer",
+      reference: "OPAY-" + Date.now(),
+      status: "awaiting_confirmation"
     },
 
     orderStatus: "pending_admin_approval",
@@ -171,7 +157,9 @@ async function completeOrder(method, reference, paymentStatus){
 
   /* Clear cart */
   const batch = db.batch();
-  CART.forEach(i=>batch.delete(db.collection("cart").doc(i.id)));
+  CART.forEach(i=>{
+    batch.delete(db.collection("cart").doc(i.id));
+  });
   await batch.commit();
 
   /* Send receipt email */
@@ -179,13 +167,16 @@ async function completeOrder(method, reference, paymentStatus){
     to_name: el("name").value,
     order_id: orderRef.id,
     order_total: "₦"+TOTAL.toLocaleString(),
-    payment_method: method,
-    payment_ref: reference
+    payment_method: "Opay Bank Transfer",
+    payment_ref: "OPAY"
   }).catch(()=>{});
 
   alert("Order placed successfully!");
-  location.href = "track-order.html?id=" + orderRef.id;
+
+  /* IMPORTANT: auto clear cart signal */
+  location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
 }
 </script>
+
 </body>
 </html>
