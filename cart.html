@@ -192,6 +192,25 @@ window.location.href="checkout.html";
 function goBack(){
 window.history.back();
 }
+
+async function clearUserCart(){
+  const user = auth.currentUser;
+  if(!user) return;
+
+  const snap = await db.collection("cart")
+    .where("userId","==",user.uid)
+    .get();
+
+  if(snap.empty) return;
+
+  const batch = db.batch();
+  snap.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+  
 </script>
 
 </body>
