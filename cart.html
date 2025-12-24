@@ -136,8 +136,18 @@ const db=firebase.firestore();
 let total=0;
 
 auth.onAuthStateChanged(async user=>{
-if(!user){await auth.signInAnonymously()}
-loadCart();
+  if(!user){
+    await auth.signInAnonymously();
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  if(params.get("clearCart") === "1"){
+    await clearUserCart();
+    history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  loadCart();
 });
 
 async function loadCart(){
