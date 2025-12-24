@@ -123,6 +123,7 @@ el("confirmOrder").onclick = async () => {
   submitting = true;
 
   try {
+    // Add order
     const orderRef = await db.collection("orders").add({
       userId: auth.currentUser.uid,
       customer: { name, phone, address },
@@ -137,6 +138,9 @@ el("confirmOrder").onclick = async () => {
       deliveryStatus: "not_shipped",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
+    // Add orderId field
+    await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
 
     // Clear cart
     const batch = db.batch();
