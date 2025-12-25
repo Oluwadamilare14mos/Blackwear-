@@ -3,56 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Your Order | Blackwear</title>
+<title>Track Order | Blackwear</title>
+
 <style>
 body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.container{max-width:900px;margin:auto;background:#141414;padding:20px;border-radius:12px}
-h1{color:#ff7f00}
-label{font-weight:bold;margin-top:10px;display:block}
-input{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:none;background:#000;color:#fff}
-.btn{margin-top:12px;padding:12px;border:none;border-radius:12px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.order-info{margin-top:20px;padding:14px;background:#000;border-radius:10px}
-.order-item{display:flex;justify-content:space-between;border-bottom:1px solid #333;padding:6px 0}
-.total{font-weight:bold;margin-top:10px;color:#ff7f00}
-.error{color:red;margin-top:10px;background:#330000;padding:10px;border-radius:8px}
-.progress-container{background:#333;height:12px;border-radius:6px;margin:10px 0}
-.progress-bar{height:12px;border-radius:6px;background:#ff7f00;width:0%}
+.container{max-width:900px;margin:auto;background:#141414;padding:20px;border-radius:14px}
+h1,h2{color:#ff7f00}
+input{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:none;background:#000;color:#fff}
+button{margin-top:12px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
+.error{background:#330000;color:#ffb3b3;padding:10px;border-radius:8px;margin-top:10px}
+.section{margin-top:20px}
+.item{display:flex;gap:12px;align-items:center;border-bottom:1px solid #333;padding:10px 0}
+.item img{width:60px;height:60px;border-radius:8px;object-fit:cover}
+.total{font-size:18px;font-weight:bold;color:#ff7f00;margin-top:10px}
+.progress-bar{background:#000;border-radius:10px;overflow:hidden;margin-top:8px}
+.progress{height:12px;background:#ff7f00;width:0%}
+.status{margin-top:6px;font-weight:bold}
 </style>
 </head>
+
 <body>
 
 <div class="container">
   <h1>Track Your Order</h1>
-  <label>Enter your Order ID:</label>
-  <input type="text" id="orderIdInput" placeholder="Order ID">
-  <button class="btn" id="trackBtn">Track Order</button>
+
+  <input id="orderIdInput" placeholder="Enter Order ID">
+  <button onclick="track()">Track Order</button>
 
   <div id="error" class="error" style="display:none"></div>
-  <div id="orderDetails" class="order-info" style="display:none">
-    <h2>Customer Info</h2>
-    <p id="customerName"></p>
-    <p id="customerPhone"></p>
-    <p id="customerAddress"></p>
 
-    <h2>Items</h2>
-    <div id="items"></div>
+  <div id="details" style="display:none">
 
-    <p class="total">Total: <span id="totalPrice"></span></p>
-
-    <h2>Payment</h2>
-    <p id="paymentMethod"></p>
-    <p id="paymentRef"></p>
-    <p id="paymentStatus"></p>
-
-    <h2>Order Status</h2>
-    <p id="orderStatus"></p>
-    <p id="deliveryStatus"></p>
-
-    <h2>Delivery Progress</h2>
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
+    <div class="section">
+      <h2>Customer</h2>
+      <p id="custName"></p>
+      <p id="custPhone"></p>
+      <p id="custAddress"></p>
     </div>
-    <p>Estimated Delivery: <span id="estimatedDelivery"></span></p>
+
+    <div class="section">
+      <h2>Items</h2>
+      <div id="items"></div>
+      <div class="total" id="total"></div>
+    </div>
+
+    <div class="section">
+      <h2>Payment</h2>
+      <p id="payMethod"></p>
+      <p id="payRef"></p>
+      <p id="payStatus"></p>
+    </div>
+
+    <div class="section">
+      <h2>Delivery</h2>
+      <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+      </div>
+      <div class="status" id="deliveryStatus"></div>
+      <p id="estimated"></p>
+    </div>
+
   </div>
 </div>
 
@@ -70,80 +80,86 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const el = id => document.getElementById(id);
 
-async function loadOrder(orderId){
+function deliveryPercent(status){
+  if(status === "pending") return 10;
+  if(status === "processing") return 35;
+  if(status === "shipped") return 70;
+  if(status === "delivered") return 100;
+  return 0;
+}
+
+async function loadOrder(id){
   el("error").style.display = "none";
-  el("orderDetails").style.display = "none";
+  el("details").style.display = "none";
 
-  try {
-    const docRef = db.collection("orders").doc(orderId);
-    const docSnap = await docRef.get();
-
-    if(!docSnap.exists){
+  try{
+    const doc = await db.collection("orders").doc(id).get();
+    if(!doc.exists){
       el("error").textContent = "Order not found";
       el("error").style.display = "block";
       return;
     }
 
-    const data = docSnap.data();
+    const d = doc.data();
 
     // Customer
-    el("customerName").textContent = "Name: " + data.customer.name;
-    el("customerPhone").textContent = "Phone: " + data.customer.phone;
-    el("customerAddress").textContent = "Address: " + data.customer.address;
+    el("custName").textContent = "Name: " + d.customer.name;
+    el("custPhone").textContent = "Phone: " + d.customer.phone;
+    el("custAddress").textContent = "Address: " + d.customer.address;
 
     // Items
-    const itemsDiv = el("items");
-    itemsDiv.innerHTML = "";
-    data.items.forEach(item => {
+    el("items").innerHTML = "";
+    d.items.forEach(i=>{
       const div = document.createElement("div");
-      div.className = "order-item";
-      div.innerHTML = `<span>${item.productName || item.name}</span><span>₦${Number(item.price).toLocaleString()} x ${item.quantity || 1}</span>`;
-      itemsDiv.appendChild(div);
+      div.className = "item";
+      div.innerHTML = `
+        <img src="${i.image || ''}">
+        <div>
+          <div>${i.productName}</div>
+          <div>₦${Number(i.price).toLocaleString()} × ${i.quantity || 1}</div>
+        </div>
+      `;
+      el("items").appendChild(div);
     });
 
-    // Total
-    el("totalPrice").textContent = "₦" + Number(data.total).toLocaleString();
+    el("total").textContent = "Total: ₦" + Number(d.total).toLocaleString();
 
     // Payment
-    el("paymentMethod").textContent = "Method: " + data.payment.method;
-    el("paymentRef").textContent = "Reference: " + data.payment.reference;
-    el("paymentStatus").textContent = "Status: " + data.payment.status;
+    el("payMethod").textContent = "Method: " + d.payment.method;
+    el("payRef").textContent = "Reference: " + d.payment.reference;
+    el("payStatus").textContent = "Status: " + d.payment.status;
 
-    // Order status
-    el("orderStatus").textContent = "Order Status: " + data.orderStatus;
-    el("deliveryStatus").textContent = "Delivery Status: " + data.deliveryStatus;
+    // Delivery
+    const status = d.deliveryStatus || "pending";
+    const percent = deliveryPercent(status);
+    el("progress").style.width = percent + "%";
+    el("deliveryStatus").textContent = "Status: " + status.toUpperCase();
+    el("estimated").textContent = "Estimated delivery: " + (d.estimatedDelivery || "Not set");
 
-    // Delivery progress
-    const progress = data.deliveryProgress || 0;
-    el("progressBar").style.width = progress + "%";
+    el("details").style.display = "block";
 
-    // Estimated delivery
-    el("estimatedDelivery").textContent = data.estimatedDelivery || "—";
-
-    el("orderDetails").style.display = "block";
-  } catch(err){
+  }catch(err){
     console.error(err);
     el("error").textContent = "Error loading order";
     el("error").style.display = "block";
   }
 }
 
-// Track button
-el("trackBtn").onclick = () => {
+function track(){
   const id = el("orderIdInput").value.trim();
-  if(id) loadOrder(id);
-  else {
-    el("error").textContent = "Please enter an Order ID";
+  if(!id){
+    el("error").textContent = "Enter Order ID";
     el("error").style.display = "block";
+    return;
   }
-};
+  loadOrder(id);
+}
 
-// Auto load if orderId is in URL
-const urlParams = new URLSearchParams(window.location.search);
-const orderIdFromURL = urlParams.get("id");
-if(orderIdFromURL){
-  el("orderIdInput").value = orderIdFromURL;
-  loadOrder(orderIdFromURL);
+// Auto load from URL
+const params = new URLSearchParams(location.search);
+if(params.get("id")){
+  el("orderIdInput").value = params.get("id");
+  loadOrder(params.get("id"));
 }
 </script>
 
