@@ -15,6 +15,8 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:none;back
 .order-item{display:flex;justify-content:space-between;border-bottom:1px solid #333;padding:6px 0}
 .total{font-weight:bold;margin-top:10px;color:#ff7f00}
 .error{color:red;margin-top:10px;background:#330000;padding:10px;border-radius:8px}
+.progress-container{background:#333;height:12px;border-radius:6px;margin:10px 0}
+.progress-bar{height:12px;border-radius:6px;background:#ff7f00;width:0%}
 </style>
 </head>
 <body>
@@ -45,6 +47,12 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:none;back
     <h2>Order Status</h2>
     <p id="orderStatus"></p>
     <p id="deliveryStatus"></p>
+
+    <h2>Delivery Progress</h2>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <p>Estimated Delivery: <span id="estimatedDelivery"></span></p>
   </div>
 </div>
 
@@ -53,7 +61,6 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:none;back
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
-// Initialize Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -105,6 +112,13 @@ async function loadOrder(orderId){
     // Order status
     el("orderStatus").textContent = "Order Status: " + data.orderStatus;
     el("deliveryStatus").textContent = "Delivery Status: " + data.deliveryStatus;
+
+    // Delivery progress
+    const progress = data.deliveryProgress || 0;
+    el("progressBar").style.width = progress + "%";
+
+    // Estimated delivery
+    el("estimatedDelivery").textContent = data.estimatedDelivery || "—";
 
     el("orderDetails").style.display = "block";
   } catch(err){
