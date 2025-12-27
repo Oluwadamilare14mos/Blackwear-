@@ -1,165 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Order | Blackwear</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Delivery Tracking | Blackwear</title>
 
 <style>
-body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.container{max-width:900px;margin:auto;background:#141414;padding:20px;border-radius:14px}
-h1,h2{color:#ff7f00}
-input{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:none;background:#000;color:#fff}
-button{margin-top:12px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.error{background:#330000;color:#ffb3b3;padding:10px;border-radius:8px;margin-top:10px}
-.section{margin-top:20px}
-.item{display:flex;gap:12px;align-items:center;border-bottom:1px solid #333;padding:10px 0}
-.item img{width:60px;height:60px;border-radius:8px;object-fit:cover}
-.total{font-size:18px;font-weight:bold;color:#ff7f00;margin-top:10px}
-.progress-bar{background:#000;border-radius:10px;overflow:hidden;margin-top:8px}
-.progress{height:12px;background:#ff7f00;width:0%}
-.status{margin-top:6px;font-weight:bold}
+body{
+  margin:0;padding:20px;
+  background:#0f0f0f;
+  color:#fff;
+  font-family:system-ui
+}
+h1{color:#ff7f00}
+.card{
+  background:#141414;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:14px;
+  cursor:pointer;
+  border:1px solid #1f1f1f
+}
+.badge{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  background:#333;
+  float:right
+}
+.details{
+  display:none;
+  margin-top:14px;
+  background:#000;
+  padding:12px;
+  border-radius:12px
+}
+.item{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px
+}
+.item img{
+  width:60px;height:60px;
+  border-radius:8px;
+  object-fit:cover
+}
+.progress{
+  height:6px;
+  background:#333;
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:8px
+}
+.progress span{
+  display:block;
+  height:100%;
+  background:#ff7f00
+}
+.small{color:#aaa;font-size:13px}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h1>Track Your Order</h1>
-
-  <input id="orderIdInput" placeholder="Enter Order ID">
-  <button onclick="track()">Track Order</button>
-
-  <div id="error" class="error" style="display:none"></div>
-
-  <div id="details" style="display:none">
-
-    <div class="section">
-      <h2>Customer</h2>
-      <p id="custName"></p>
-      <p id="custPhone"></p>
-      <p id="custAddress"></p>
-    </div>
-
-    <div class="section">
-      <h2>Items</h2>
-      <div id="items"></div>
-      <div class="total" id="total"></div>
-    </div>
-
-    <div class="section">
-      <h2>Payment</h2>
-      <p id="payMethod"></p>
-      <p id="payRef"></p>
-      <p id="payStatus"></p>
-    </div>
-
-    <div class="section">
-      <h2>Delivery</h2>
-      <div class="progress-bar">
-        <div class="progress" id="progress"></div>
-      </div>
-      <div class="status" id="deliveryStatus"></div>
-      <p id="estimated"></p>
-    </div>
-
-  </div>
-</div>
+<h1>Delivery Tracking</h1>
+<div id="orders"></div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
 firebase.initializeApp({
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-  authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
+  apiKey:"AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain:"blackwear-14a31.firebaseapp.com",
+  projectId:"blackwear-14a31"
 });
 
+const auth = firebase.auth();
 const db = firebase.firestore();
-const el = id => document.getElementById(id);
+const container = document.getElementById("orders");
 
-function deliveryPercent(status){
-  if(status === "pending") return 10;
-  if(status === "processing") return 35;
-  if(status === "shipped") return 70;
-  if(status === "delivered") return 100;
-  return 0;
-}
+/* ---------- AUTH ---------- */
+auth.onAuthStateChanged(async user=>{
+  if(!user) await auth.signInAnonymously();
+  loadOrders();
+});
 
-async function loadOrder(id){
-  el("error").style.display = "none";
-  el("details").style.display = "none";
+/* ---------- LOAD ORDERS ---------- */
+async function loadOrders(){
+  const snap = await db.collection("orders")
+    .where("userId","==",auth.currentUser.uid)
+    .orderBy("createdAt","desc")
+    .get();
 
-  try{
-    const doc = await db.collection("orders").doc(id).get();
-    if(!doc.exists){
-      el("error").textContent = "Order not found";
-      el("error").style.display = "block";
-      return;
-    }
-
-    const d = doc.data();
-
-    // Customer
-    el("custName").textContent = "Name: " + d.customer.name;
-    el("custPhone").textContent = "Phone: " + d.customer.phone;
-    el("custAddress").textContent = "Address: " + d.customer.address;
-
-    // Items
-    el("items").innerHTML = "";
-    d.items.forEach(i=>{
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <img src="${i.image || ''}">
-        <div>
-          <div>${i.productName}</div>
-          <div>₦${Number(i.price).toLocaleString()} × ${i.quantity || 1}</div>
-        </div>
-      `;
-      el("items").appendChild(div);
-    });
-
-    el("total").textContent = "Total: ₦" + Number(d.total).toLocaleString();
-
-    // Payment
-    el("payMethod").textContent = "Method: " + d.payment.method;
-    el("payRef").textContent = "Reference: " + d.payment.reference;
-    el("payStatus").textContent = "Status: " + d.payment.status;
-
-    // Delivery
-    const status = d.deliveryStatus || "pending";
-    const percent = deliveryPercent(status);
-    el("progress").style.width = percent + "%";
-    el("deliveryStatus").textContent = "Status: " + status.toUpperCase();
-    el("estimated").textContent = "Estimated delivery: " + (d.estimatedDelivery || "Not set");
-
-    el("details").style.display = "block";
-
-  }catch(err){
-    console.error(err);
-    el("error").textContent = "Error loading order";
-    el("error").style.display = "block";
-  }
-}
-
-function track(){
-  const id = el("orderIdInput").value.trim();
-  if(!id){
-    el("error").textContent = "Enter Order ID";
-    el("error").style.display = "block";
+  if(snap.empty){
+    container.innerHTML = "<p>No orders found.</p>";
     return;
   }
-  loadOrder(id);
-}
 
-// Auto load from URL
-const params = new URLSearchParams(location.search);
-if(params.get("id")){
-  el("orderIdInput").value = params.get("id");
-  loadOrder(params.get("id"));
+  container.innerHTML = "";
+
+  snap.forEach(doc=>{
+    const o = doc.data();
+    const progress = o.deliveryProgress ?? 0;
+    const est = o.estimatedDelivery ?? "—";
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <strong>Order #${o.orderId || doc.id}</strong>
+      <span class="badge">${o.deliveryStatus || "pending"}</span>
+
+      <div class="small">
+        Ordered: ${o.createdAt?.toDate().toLocaleDateString()}
+      </div>
+
+      <div class="progress">
+        <span style="width:${progress}%"></span>
+      </div>
+      <div class="small">Delivery progress: ${progress}%</div>
+
+      <div class="details"></div>
+    `;
+
+    const details = card.querySelector(".details");
+
+    o.items.forEach(it=>{
+      details.innerHTML += `
+        <div class="item">
+          <img src="${it.image || ''}">
+          <div>
+            <div>${it.productName || it.name}</div>
+            <div class="small">
+              ₦${Number(it.price).toLocaleString()} × ${it.quantity || 1}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    details.innerHTML += `
+      <div class="small">Payment: ${o.payment?.status || "pending"}</div>
+      <div class="small">Estimated Delivery: ${est}</div>
+    `;
+
+    card.onclick = ()=>{
+      details.style.display =
+        details.style.display === "block" ? "none" : "block";
+    };
+
+    container.appendChild(card);
+  });
 }
 </script>
 
