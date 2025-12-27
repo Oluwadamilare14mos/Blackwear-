@@ -1,144 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Delete Account — Blackwear</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings | Blackwear</title>
 
-  <!-- Fonts & Tailwind -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: "#ff7f00",
-            dark: "#0b0b0b",
-            danger: "#dc2626"
-          },
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },
-        },
-      },
-    };
-  </script>
-
-  <style>
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
-  </style>
+<style>
+body{
+  margin:0;
+  padding:20px;
+  background:#0f0f0f;
+  color:#fff;
+  font-family:system-ui;
+}
+.container{
+  max-width:700px;
+  margin:auto;
+  background:#141414;
+  padding:20px;
+  border-radius:14px;
+}
+h1{
+  color:#ff7f00;
+  margin-bottom:20px;
+}
+.section{
+  margin-bottom:25px;
+}
+label{
+  display:block;
+  margin-bottom:6px;
+  font-weight:600;
+}
+input, select{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#000;
+  color:#fff;
+}
+.save-btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:#ff7f00;
+  color:#000;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+}
+.success{
+  display:none;
+  background:#003300;
+  color:#00ff88;
+  padding:12px;
+  border-radius:10px;
+  margin-top:15px;
+}
+</style>
 </head>
 
-<body class="min-h-screen text-white flex items-center justify-center">
+<body>
 
-  <div class="bg-[#111] border border-gray-700 rounded-xl shadow-xl p-6 w-full max-w-md text-center">
+<div class="container">
+  <h1>Account Settings</h1>
 
-    <h1 class="text-2xl font-bold text-danger mb-3">Delete Account</h1>
+  <!-- Profile -->
+  <div class="section">
+    <h3>Profile Information</h3>
+    <label>Full Name</label>
+    <input id="name" placeholder="Your name">
 
-    <p class="text-gray-400 text-sm mb-5">
-      This action is <strong class="text-danger">permanent</strong>.  
-      Your account, cart, orders, and all data will be deleted forever.
-    </p>
+    <label>Phone Number</label>
+    <input id="phone" placeholder="Your phone">
 
-    <div class="space-y-3">
-      <button id="deleteBtn"
-        class="w-full bg-danger hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition">
-        Yes, Delete My Account
-      </button>
-
-      <a href="settings.html"
-        class="block w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition">
-        Cancel
-      </a>
-    </div>
-
-    <p id="statusMsg" class="text-sm mt-4"></p>
+    <label>Delivery Address</label>
+    <input id="address" placeholder="Delivery address">
   </div>
 
-  <!-- FIREBASE -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      where,
-      getDocs,
-      deleteDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  <!-- Preferences -->
+  <div class="section">
+    <h3>Preferences</h3>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-      authDomain: "blackwear-14a31.firebaseapp.com",
-      projectId: "blackwear-14a31"
-    };
+    <label>Delivery Notification</label>
+    <select id="notify">
+      <option value="whatsapp">WhatsApp</option>
+      <option value="sms">SMS</option>
+      <option value="email">Email</option>
+    </select>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <label>Preferred Delivery Time</label>
+    <select id="deliveryTime">
+      <option value="morning">Morning</option>
+      <option value="afternoon">Afternoon</option>
+      <option value="evening">Evening</option>
+    </select>
+  </div>
 
-    const statusMsg = document.getElementById("statusMsg");
-    const deleteBtn = document.getElementById("deleteBtn");
+  <button class="save-btn" id="saveBtn">Save Settings</button>
+  <div class="success" id="success">Settings updated successfully</div>
+</div>
 
-    let currentUser = null;
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-      } else {
-        currentUser = user;
-      }
-    });
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
 
-    deleteBtn.addEventListener("click", async () => {
-      if (!currentUser) return;
+const db = firebase.firestore();
+const uid = localStorage.getItem("uid"); // stored after login elsewhere
 
-      deleteBtn.disabled = true;
-      deleteBtn.textContent = "Deleting...";
-      statusMsg.textContent = "Please wait...";
-      statusMsg.className = "text-sm mt-4 text-gray-400";
+const el = id => document.getElementById(id);
 
-      try {
-        // DELETE CART
-        const cartSnap = await getDocs(
-          query(collection(db, "cart"), where("userId", "==", currentUser.uid))
-        );
-        cartSnap.forEach(d => deleteDoc(d.ref));
+// Load settings
+async function loadSettings(){
+  if(!uid) return;
 
-        // DELETE WISHLIST
-        const wishSnap = await getDocs(
-          query(collection(db, "wishlist"), where("userId", "==", currentUser.uid))
-        );
-        wishSnap.forEach(d => deleteDoc(d.ref));
+  const doc = await db.collection("users").doc(uid).get();
+  if(!doc.exists) return;
 
-        // DELETE ORDERS
-        const orderSnap = await getDocs(
-          query(collection(db, "orders"), where("userId", "==", currentUser.uid))
-        );
-        orderSnap.forEach(d => deleteDoc(d.ref));
+  const data = doc.data();
 
-        // DELETE AUTH ACCOUNT
-        await deleteUser(currentUser);
+  el("name").value = data.name || "";
+  el("phone").value = data.phone || "";
+  el("address").value = data.address || "";
+  el("notify").value = data.notify || "whatsapp";
+  el("deliveryTime").value = data.deliveryTime || "morning";
+}
 
-        statusMsg.textContent = "Account deleted successfully.";
-        statusMsg.className = "text-sm mt-4 text-green-500";
+// Save settings
+el("saveBtn").onclick = async () => {
+  if(!uid) return;
 
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 1500);
+  await db.collection("users").doc(uid).set({
+    name: el("name").value,
+    phone: el("phone").value,
+    address: el("address").value,
+    notify: el("notify").value,
+    deliveryTime: el("deliveryTime").value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true });
 
-      } catch (err) {
-        console.error(err);
+  el("success").style.display = "block";
+  setTimeout(() => el("success").style.display = "none", 3000);
+};
 
-        statusMsg.textContent = "Failed to delete account. Refresh and try again.";
-        statusMsg.className = "text-sm mt-4 text-red-500";
-
-        deleteBtn.disabled = false;
-        deleteBtn.textContent = "Yes, Delete My Account";
-      }
-    });
-  </script>
+loadSettings();
+</script>
 
 </body>
 </html>
