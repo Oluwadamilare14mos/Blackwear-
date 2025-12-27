@@ -51,45 +51,88 @@ firebase.initializeApp({
 const db = firebase.firestore();  
 const el = id => document.getElementById(id);  
   
-async function loadOrder(orderId){  
-  el("error").style.display = "none";  
-  el("orderDetails").style.display = "none";  
-  
-  try {  
-    const docRef = db.collection("orders").doc(orderId);  
-    const docSnap = await docRef.get();  
-  
-    if(!docSnap.exists){  
-      el("error").textContent = "Order not found";  
-      el("error").style.display = "block";  
-      return;  
-    }  
-  
-    const data = docSnap.data();  
-  
-    // Customer  
-    el("customerName").textContent = "Name: " + data.customer.name;  
-    el("customerPhone").textContent = "Phone: " + data.customer.phone;  
-    el("customerAddress").textContent = "Address: " + data.customer.address;  
-  
-    // Items  
-    const itemsDiv = el("items");  
-    itemsDiv.innerHTML = "";  
-    data.items.forEach(item => {  
-      const div = document.createElement("div");  
-      div.className = "order-item";  
-      div.innerHTML = `<span>${item.productName || item.name}</span><span>₦${Number(item.price).toLocaleString()} x ${item.quantity || 1}</span>`;  
-      itemsDiv.appendChild(div);  
-    });  
-  
-    // Total  
-    el("totalPrice").textContent = "₦" + Number(data.total).toLocaleString();  
-  
-    // Payment  
-    el("paymentMethod").textContent = "Method: " + data.payment.method;  
-    el("paymentRef").textContent = "Reference: " + data.payment.reference;  
-    el("paymentStatus").textContent = "Status: " + data.payment.status;  
-  
+async function loadOrder(orderId){
+  el("error").style.display = "none";
+  el("orderDetails").style.display = "none";
+
+  try {
+    const docSnap = await db.collection("orders").doc(orderId).get();
+
+    if(!docSnap.exists){
+      el("error").textContent = "Order not found";
+      el("error").style.display = "block";
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // Customer
+    el("customerName").textContent = "Name: " + data.customer?.name;
+    el("customerPhone").textContent = "Phone: " + data.customer?.phone;
+    el("customerAddress").textContent = "Address: " + data.customer?.address;
+
+    // Items
+    const itemsDiv = el("items");
+    itemsDiv.innerHTML = "";
+
+    data.items.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "order-item";
+      div.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:center">
+          <img src="${item.image}" style="width:50px;height:50px;border-radius:8px;object-fit:cover">
+          <div>
+            <div>${item.productName}</div>
+            <small>Qty: ${item.quantity}</small>
+          </div>
+        </div>
+        <strong>₦${Number(item.price).toLocaleString()}</strong>
+      `;
+      itemsDiv.appendChild(div);
+    });
+
+    // Total (FIX)
+    el("totalPrice").textContent =
+      "₦" + Number(data.payment?.total || 0).toLocaleString();
+
+    // Dates
+    el("orderedDate").textContent =
+      "Ordered: " + data.createdAt.toDate().toDateString();
+
+    el("estimatedDelivery").textContent =
+      "Estimated delivery: " + (data.estimatedDelivery || "Not set");
+
+    // Status
+    el("orderStatus").textContent =
+      "Order status: " + (data.orderStatus || "pending");
+
+    el("deliveryStatus").textContent =
+      "Delivery status: " + (data.deliveryStatus || "pending");
+
+    // Payment
+    el("paymentMethod").textContent =
+      "Method: " + data.payment?.method;
+
+    el("paymentRef").textContent =
+      "Reference: " + data.payment?.reference;
+
+    el("paymentStatus").textContent =
+      "Payment status: " + data.payment?.status;
+
+    // Toggle open
+    el("toggleOrder").onclick = () => {
+      const body = el("orderBody");
+      body.style.display = body.style.display === "none" ? "block" : "none";
+    };
+
+    el("orderDetails").style.display = "block";
+
+  } catch (err) {
+    console.error(err);
+    el("error").textContent = "Error loading order";
+    el("error").style.display = "block";
+  }
+
     // Order status  
     el("orderStatus").textContent = "Order Status: " + data.orderStatus;  
     el("deliveryStatus").textContent = "Delivery Status: " + data.deliveryStatus;  
