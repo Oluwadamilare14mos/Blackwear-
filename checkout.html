@@ -67,12 +67,7 @@ let CART = [];
 let TOTAL = 0;
 let submitting = false;
 
-// Load cart on auth
-auth.onAuthStateChanged(async user => {
-  if(!user) await auth.signInAnonymously();
-  loadCart();
-});
-
+/* ================= LOAD CART ================= */
 async function loadCart(){
   const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
   CART = [];
@@ -93,7 +88,7 @@ async function loadCart(){
     el("items").innerHTML += `
       <div class="order-item">
         <span>${p.productName || p.name}</span>
-        <span>₦${Number(p.price).toLocaleString()}</span>
+        <span>₦${Number(p.price).toLocaleString()} x ${p.quantity || 1}</span>
       </div>
     `;
   });
@@ -101,9 +96,15 @@ async function loadCart(){
   el("total").textContent = "₦" + TOTAL.toLocaleString();
 }
 
+/* ================= AUTH ================= */
+auth.onAuthStateChanged(async user => {
+  if(!user) await auth.signInAnonymously();
+  loadCart();
+});
+
+/* ================= CONFIRM ORDER ================= */
 el("confirmOrder").onclick = async () => {
   if(submitting) return;
-
   const name = el("name").value.trim();
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
@@ -112,7 +113,6 @@ el("confirmOrder").onclick = async () => {
     alert("Fill all customer details");
     return;
   }
-
   if(!CART.length){
     alert("Your cart is empty");
     return;
@@ -121,38 +121,40 @@ el("confirmOrder").onclick = async () => {
   submitting = true;
 
   try {
-    // Add order
-    const orderRef = await db.collection("orders").add({
+    const orderId = "BW-" + Date.now();
+    const orderData = {
+      orderId: orderId,
       userId: auth.currentUser.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       customer: { name, phone, address },
-      items: CART,
+      items: CART.map(i=>({
+        productId: i.productId || "",
+        productName: i.productName || i.name,
+        image: i.image || "",
+        price: i.price,
+        quantity: i.quantity
+      })),
       total: TOTAL,
+      orderStatus: "pending",
+      deliveryStatus: "pending",
+      deliveryProcess: "Your order is being approved",
+      estimatedDelivery: new Date(Date.now() + 3*24*60*60*1000).toDateString(), // +3 days
+      deliveryUpdates: [{ text: "We deliver fast", time: firebase.firestore.FieldValue.serverTimestamp() }],
       payment: {
-        method: "Opay Bank Transfer",
-        reference: "OPAY-" + Date.now(),
-        status: "awaiting_confirmation"
-      },
-      orderStatus: "pending_admin_approval",
-      deliveryStatus: "not_shipped",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+        method: "Opay",
+        ref: orderId,
+        status: "pending",
+        verified: false,
+        verifiedAt: null
+      }
+    };
 
-    // Add orderId field
-    await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
+    const orderRef = await db.collection("orders").add(orderData);
 
     // Clear cart
     const batch = db.batch();
     CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
     await batch.commit();
-
-    // Send receipt email
-    emailjs.send("service_wu4fetn","template_pjd78fl",{
-      to_name: name,
-      order_id: orderRef.id,
-      order_total: "₦"+TOTAL.toLocaleString(),
-      payment_method: "Opay Bank Transfer",
-      payment_ref: "OPAY"
-    }).catch(()=>{});
 
     alert("Order placed successfully!");
     location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
@@ -164,6 +166,5 @@ el("confirmOrder").onclick = async () => {
   }
 };
 </script>
-
 </body>
 </html>
