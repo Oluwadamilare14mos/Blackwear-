@@ -26,7 +26,7 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
   <textarea id="address" placeholder="Delivery address"></textarea>
 
   <h2>Order Summary</h2>
-  <div id="items"></div>
+  <div id="items">Loading cart...</div>
   <div class="total" id="total">₦0</div>
 
   <h2>Payment</h2>
@@ -51,120 +51,121 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-  authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
-});
-
-emailjs.init("61XKawCOBMidGo2by");
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-const el = id => document.getElementById(id);
-
-let CART = [];
-let TOTAL = 0;
-let submitting = false;
-
-/* ================= LOAD CART ================= */
-async function loadCart(){
-  const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
-  CART = [];
-  TOTAL = 0;
-  el("items").innerHTML = "";
-
-  if(snap.empty){
-    el("items").innerHTML = "<p>Your cart is empty</p>";
-    el("total").textContent = "₦0";
-    return;
-  }
-
-  snap.forEach(d=>{
-    const p = d.data();
-    CART.push({...p,id:d.id});
-    TOTAL += Number(p.price) * (p.quantity || 1);
-
-    el("items").innerHTML += `
-      <div class="order-item">
-        <span>${p.productName || p.name}</span>
-        <span>₦${Number(p.price).toLocaleString()} x ${p.quantity || 1}</span>
-      </div>
-    `;
+try {
+  // Firebase initialization
+  firebase.initializeApp({
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31"
   });
 
-  el("total").textContent = "₦" + TOTAL.toLocaleString();
-}
+  emailjs.init("61XKawCOBMidGo2by");
 
-/* ================= AUTH ================= */
-auth.onAuthStateChanged(async user => {
-  if(!user) await auth.signInAnonymously();
-  loadCart();
-});
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const el = id => document.getElementById(id);
 
-/* ================= CONFIRM ORDER ================= */
-el("confirmOrder").onclick = async () => {
-  if(submitting) return;
-  const name = el("name").value.trim();
-  const phone = el("phone").value.trim();
-  const address = el("address").value.trim();
+  let CART = [];
+  let TOTAL = 0;
+  let submitting = false;
 
-  if(!name || !phone || !address){
-    alert("Fill all customer details");
-    return;
-  }
-  if(!CART.length){
-    alert("Your cart is empty");
-    return;
-  }
+  // Ensure anonymous login
+  auth.onAuthStateChanged(async user => {
+    if (!user) await auth.signInAnonymously();
+    loadCart();
+  });
 
-  submitting = true;
+  // Load cart items
+  async function loadCart() {
+    try {
+      const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
+      CART = [];
+      TOTAL = 0;
+      el("items").innerHTML = "";
 
-  try {
-    const orderId = "BW-" + Date.now();
-    const orderData = {
-      orderId: orderId,
-      userId: auth.currentUser.uid,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      customer: { name, phone, address },
-      items: CART.map(i=>({
-        productId: i.productId || "",
-        productName: i.productName || i.name,
-        image: i.image || "",
-        price: i.price,
-        quantity: i.quantity
-      })),
-      total: TOTAL,
-      orderStatus: "pending",
-      deliveryStatus: "pending",
-      deliveryProcess: "Your order is being approved",
-      estimatedDelivery: new Date(Date.now() + 3*24*60*60*1000).toDateString(), // +3 days
-      deliveryUpdates: [{ text: "We deliver fast", time: firebase.firestore.FieldValue.serverTimestamp() }],
-      payment: {
-        method: "Opay",
-        ref: orderId,
-        status: "pending",
-        verified: false,
-        verifiedAt: null
+      if (snap.empty) {
+        el("items").innerHTML = "<p>Your cart is empty</p>";
+        el("total").textContent = "₦0";
+        return;
       }
-    };
 
-    const orderRef = await db.collection("orders").add(orderData);
+      snap.forEach(doc => {
+        const p = doc.data();
+        CART.push({...p,id:doc.id});
+        TOTAL += Number(p.price) * (p.quantity || 1);
+        el("items").innerHTML += `
+          <div class="order-item">
+            <span>${p.productName || p.name}</span>
+            <span>₦${Number(p.price).toLocaleString()}</span>
+          </div>`;
+      });
 
-    // Clear cart
-    const batch = db.batch();
-    CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
-    await batch.commit();
-
-    alert("Order placed successfully!");
-    location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
-
-  } catch(err) {
-    console.error(err);
-    alert("Failed to place order. Try again.");
-    submitting = false;
+      el("total").textContent = "₦" + TOTAL.toLocaleString();
+    } catch(err) {
+      console.error("Error loading cart:", err);
+      el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
+    }
   }
-};
+
+  // Confirm Order click
+  el("confirmOrder").onclick = async () => {
+    if (submitting) return;
+    const name = el("name").value.trim();
+    const phone = el("phone").value.trim();
+    const address = el("address").value.trim();
+
+    if (!name || !phone || !address) return alert("Fill all customer details");
+    if (!CART.length) return alert("Your cart is empty");
+
+    submitting = true;
+
+    try {
+      const orderRef = await db.collection("orders").add({
+        userId: auth.currentUser.uid,
+        customer: { name, phone, address },
+        items: CART,
+        total: TOTAL,
+        payment: {
+          method: "Opay Bank Transfer",
+          reference: "OPAY-" + Date.now(),
+          status: "awaiting_confirmation"
+        },
+        orderStatus: "pending_admin_approval",
+        deliveryStatus: "not_shipped",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Save orderId
+      await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
+
+      // Clear cart
+      const batch = db.batch();
+      CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
+      await batch.commit();
+
+      // Send receipt
+      emailjs.send("service_wu4fetn","template_pjd78fl",{
+        to_name: name,
+        order_id: orderRef.id,
+        order_total: "₦"+TOTAL.toLocaleString(),
+        payment_method: "Opay Bank Transfer",
+        payment_ref: "OPAY"
+      }).catch(()=>{});
+
+      alert("Order placed successfully!");
+      location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
+
+    } catch(err) {
+      console.error("Error placing order:", err);
+      alert("Failed to place order. Try again.");
+      submitting = false;
+    }
+  };
+
+} catch(globalErr) {
+  console.error("Checkout page error:", globalErr);
+  document.body.innerHTML = "<p style='color:red;text-align:center;margin-top:50px;'>Error loading checkout. Please refresh.</p>";
+}
 </script>
 </body>
 </html>
