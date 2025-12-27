@@ -1,1 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order | Blackwear</title>
 
+<style>
+body{
+  margin:0;
+  padding:20px;
+  background:#0f0f0f;
+  color:#fff;
+  font-family:system-ui
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  background:#141414;
+  padding:20px;
+  border-radius:14px
+}
+h1,h2{
+  color:#ff7f00
+}
+input{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:10px;
+  border:none;
+  background:#000;
+  color:#fff
+}
+.btn{
+  margin-top:12px;
+  padding:14px;
+  width:100%;
+  border:none;
+  border-radius:14px;
+  background:#ff7f00;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer
+}
+.card{
+  background:#000;
+  padding:14px;
+  border-radius:12px;
+  margin-top:14px
+}
+.product{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+  border-bottom:1px solid #222;
+  padding-bottom:10px
+}
+.product img{
+  width:70px;
+  height:70px;
+  border-radius:10px;
+  object-fit:cover
+}
+.status{
+  padding:8px 12px;
+  background:#141414;
+  border-radius:10px;
+  margin-top:8px
+}
+.timeline{
+  margin-top:10px
+}
+.timeline div{
+  font-size:14px;
+  padding:6px 0;
+  border-left:2px solid #ff7f00;
+  padding-left:10px;
+  margin-left:5px
+}
+.error{
+  background:#330000;
+  padding:12px;
+  border-radius:10px;
+  margin-top:12px;
+  color:#ff8080
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Track Your Order</h1>
+
+  <input id="orderInput" placeholder="Enter Order ID">
+  <button class="btn" onclick="trackOrder()">Track Order</button>
+
+  <div id="error" class="error" style="display:none"></div>
+
+  <div id="result" style="display:none">
+
+    <div class="card">
+      <h2>Order Information</h2>
+      <p><b>Order ID:</b> <span id="orderId"></span></p>
+      <p><b>Order Date:</b> <span id="orderDate"></span></p>
+      <p><b>Estimated Delivery:</b> <span id="estimatedDelivery"></span></p>
+    </div>
+
+    <div class="card">
+      <h2>Customer</h2>
+      <p id="customerName"></p>
+      <p id="customerPhone"></p>
+      <p id="customerAddress"></p>
+    </div>
+
+    <div class="card">
+      <h2>Products</h2>
+      <div id="products"></div>
+      <p style="margin-top:10px;font-weight:bold;color:#ff7f00">
+        Total: ₦<span id="total"></span>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Delivery Status</h2>
+      <div class="status" id="deliveryStatus"></div>
+      <div class="status" id="deliveryProcess"></div>
+
+      <div class="timeline" id="deliveryUpdates"></div>
+    </div>
+
+    <div class="card">
+      <h2>Payment</h2>
+      <p id="paymentMethod"></p>
+      <p id="paymentRef"></p>
+      <p id="paymentStatus"></p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
+
+const db = firebase.firestore();
+const el = id => document.getElementById(id);
+
+async function trackOrder(){
+  const id = el("orderInput").value.trim();
+  if(!id) return;
+
+  el("error").style.display="none";
+  el("result").style.display="none";
+
+  try{
+    const snap = await db.collection("orders")
+      .where("orderId","==",id)
+      .limit(1)
+      .get();
+
+    if(snap.empty){
+      el("error").textContent="Order not found";
+      el("error").style.display="block";
+      return;
+    }
+
+    const doc = snap.docs[0].data();
+
+    el("orderId").textContent = doc.orderId;
+    el("orderDate").textContent = doc.createdAt?.toDate().toDateString();
+    el("estimatedDelivery").textContent = doc.estimatedDelivery;
+
+    el("customerName").textContent = "Name: " + doc.customer.name;
+    el("customerPhone").textContent = "Phone: " + doc.customer.phone;
+    el("customerAddress").textContent = "Address: " + doc.customer.address;
+
+    el("deliveryStatus").textContent = "Status: " + doc.deliveryStatus;
+    el("deliveryProcess").textContent = doc.deliveryProcess;
+
+    el("paymentMethod").textContent = "Method: " + doc.payment.method;
+    el("paymentRef").textContent = "Reference: " + doc.payment.ref;
+    el("paymentStatus").textContent = "Payment Status: " + doc.payment.status;
+
+    const products = el("products");
+    products.innerHTML = "";
+    doc.items.forEach(p=>{
+      products.innerHTML += `
+        <div class="product">
+          <img src="${p.image}">
+          <div>
+            <div>${p.productName}</div>
+            <div>₦${p.price.toLocaleString()} × ${p.quantity}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    el("total").textContent = doc.total.toLocaleString();
+
+    const updates = el("deliveryUpdates");
+    updates.innerHTML = "<h3>Delivery Updates</h3>";
+    (doc.deliveryUpdate || []).forEach(u=>{
+      updates.innerHTML += `<div>${u.text} – ${u.time.toDate().toDateString()}</div>`;
+    });
+
+    el("result").style.display="block";
+
+  }catch(err){
+    console.error(err);
+    el("error").textContent="Error loading order";
+    el("error").style.display="block";
+  }
+}
+
+// Auto-load from URL
+const params = new URLSearchParams(window.location.search);
+if(params.get("id")){
+  el("orderInput").value = params.get("id");
+  trackOrder();
+}
+</script>
+
+</body>
+</html>
