@@ -1,34 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Orders — Blackwear</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders — Blackwear</title>
 
-  <!-- Fonts & Tailwind -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+        fontFamily: { poppins: ["Poppins", "sans-serif"] },
+      }
+    }
+  }
+</script>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: "#ff7f00",
-            dark: "#0b0b0b",
-          },
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },
-        },
-      },
-    };
-  </script>
-
-  <style>
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
-  </style>
+<style>
+body { font-family:Poppins, sans-serif; background:#0b0b0b; color:#fff; }
+</style>
 </head>
-
-<body class="min-h-screen text-white">
+<body class="min-h-screen">
 
 <!-- HEADER -->
 <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
@@ -37,143 +32,130 @@
 </header>
 
 <!-- CONTENT -->
-<main class="p-5 max-w-4xl mx-auto">
+<main class="p-5 max-w-5xl mx-auto">
 
-  <!-- EMPTY -->
   <div id="emptyState" class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg text-center">
     <p class="text-gray-400 text-sm">You have no orders yet.</p>
   </div>
 
-  <!-- ORDERS -->
   <div id="orderList" class="space-y-5 hidden"></div>
-
 </main>
 
 <!-- FIREBASE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    orderBy,
-    onSnapshot,
-    doc,
-    updateDoc
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import {
+  getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31",
-    storageBucket: "blackwear-14a31.firebasestorage.app",
-    messagingSenderId: "222479690292",
-    appId: "1:222479690292:web:82bd91e186da6412133861"
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31",
+  storageBucket: "blackwear-14a31.firebasestorage.app",
+  messagingSenderId: "222479690292",
+  appId: "1:222479690292:web:82bd91e186da6412133861"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const emptyState = document.getElementById("emptyState");
+const orderList = document.getElementById("orderList");
+
+function statusBadge(status){
+  const map = {
+    pending: "bg-gray-600",
+    "admin approval": "bg-yellow-500 text-black",
+    processing: "bg-yellow-500 text-black",
+    shipped: "bg-blue-600",
+    out_for_delivery: "bg-purple-600",
+    delivered: "bg-green-600",
+    cancelled: "bg-red-600"
   };
+  return map[status] || "bg-gray-600";
+}
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+async function cancelOrder(orderId){
+  if (!confirm("Cancel this order? This action cannot be undone.")) return;
+  await updateDoc(doc(db, "orders", orderId), { orderStatus: "cancelled" });
+}
 
-  const emptyState = document.getElementById("emptyState");
-  const orderList = document.getElementById("orderList");
+onAuthStateChanged(auth, (user) => {
+  if (!user) { window.location.href = "login.html"; return; }
 
-  function statusBadge(status){
-    const map = {
-      pending: "bg-gray-600",
-      processing: "bg-yellow-500 text-black",
-      shipped: "bg-blue-600",
-      out_for_delivery: "bg-purple-600",
-      delivered: "bg-green-600",
-      cancelled: "bg-red-600"
-    };
-    return map[status] || "bg-gray-600";
-  }
+  const q = query(
+    collection(db, "orders"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
 
-  async function cancelOrder(orderId){
-    if (!confirm("Cancel this order? This action cannot be undone.")) return;
-    await updateDoc(doc(db, "orders", orderId), {
-      status: "cancelled"
-    });
-  }
+  onSnapshot(q, (snap) => {
+    orderList.innerHTML = "";
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
+    if (snap.empty) {
+      emptyState.classList.remove("hidden");
+      orderList.classList.add("hidden");
       return;
     }
 
-    const q = query(
-      collection(db, "orders"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
+    emptyState.classList.add("hidden");
+    orderList.classList.remove("hidden");
 
-    onSnapshot(q, (snap) => {
-      orderList.innerHTML = "";
+    snap.forEach(docSnap => {
+      const o = docSnap.data();
+      const id = docSnap.id;
+      const canCancel = o.orderStatus === "pending" || o.orderStatus === "admin approval";
 
-      if (snap.empty) {
-        emptyState.classList.remove("hidden");
-        orderList.classList.add("hidden");
-        return;
-      }
+      const firstItem = (o.items && o.items[0]) || {};
+      const productName = firstItem.name || "Product";
+      const price = firstItem.price || 0;
+      const image = firstItem.image || "https://via.placeholder.com/80";
 
-      emptyState.classList.add("hidden");
-      orderList.classList.remove("hidden");
+      const el = document.createElement("div");
+      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg hover:shadow-2xl transition";
 
-      snap.forEach(docSnap => {
-        const o = docSnap.data();
-        const id = docSnap.id;
+      el.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold text-brand cursor-pointer" onclick="window.location.href='product.html?id=${firstItem.productId || ""}'">
+            Order #${id.slice(0,8).toUpperCase()}
+          </h3>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(o.orderStatus)}">
+            ${(o.orderStatus || "pending").replaceAll("_"," ").toUpperCase()}
+          </span>
+        </div>
 
-        const canCancel = o.status === "pending";
-
-        const el = document.createElement("div");
-        el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
-
-        el.innerHTML = `
-          <div class="flex justify-between items-center mb-3">
-            <h3 class="font-semibold text-brand">Order #${id.slice(0,8).toUpperCase()}</h3>
-            <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(o.status)}">
-              ${(o.status || "pending").replaceAll("_"," ").toUpperCase()}
-            </span>
+        <div class="flex items-center gap-4 mb-4 cursor-pointer" onclick="window.location.href='product.html?id=${firstItem.productId || ""}'">
+          <img src="${image}" class="w-16 h-16 rounded-lg object-cover border border-gray-700"/>
+          <div>
+            <p class="font-semibold">${productName}</p>
+            <p class="text-sm text-gray-400">₦${Number(price).toLocaleString()}</p>
+            <p class="text-xs text-gray-500">Qty: ${firstItem.quantity || 1}</p>
           </div>
+        </div>
 
-          <div class="flex items-center gap-4 mb-4">
-            <img src="${o.image || 'https://via.placeholder.com/80'}"
-                 class="w-16 h-16 rounded-lg object-cover border border-gray-700"/>
-            <div>
-              <p class="font-semibold">${o.productName || "Product"}</p>
-              <p class="text-sm text-gray-400">₦${Number(o.price||0).toLocaleString()}</p>
-            </div>
-          </div>
+        <div class="text-xs text-gray-400 mb-4 flex justify-between">
+          <span>Ordered: ${o.createdAt?.toDate().toLocaleDateString() || ""}</span>
+          <span>Est. Delivery: ${o.estimatedDelivery || "—"}</span>
+        </div>
 
-          <div class="text-xs text-gray-400 mb-4 flex justify-between">
-            <span>Ordered: ${o.createdAt?.toDate().toLocaleDateString() || ""}</span>
-            <span>Est. Delivery: ${o.estimatedDelivery || "—"}</span>
-          </div>
+        <div class="flex gap-3">
+          <a href="delivery-tracking.html?id=${id}"
+             class="flex-1 text-center py-2 rounded-lg bg-brand text-black font-semibold text-sm">
+            Track Order
+          </a>
+          ${canCancel ? `<button onclick="cancelOrder('${id}')"
+             class="flex-1 py-2 rounded-lg bg-red-600 hover:bg-red-700 font-semibold text-sm">
+             Cancel</button>` : ""}
+        </div>
+      `;
 
-          <div class="flex gap-3">
-            <a href="delivery-tracking.html"
-               class="flex-1 text-center py-2 rounded-lg bg-brand text-black font-semibold text-sm">
-              Track Order
-            </a>
-
-            ${canCancel ? `
-              <button onclick="cancelOrder('${id}')"
-                class="flex-1 py-2 rounded-lg bg-red-600 hover:bg-red-700 font-semibold text-sm">
-                Cancel
-              </button>
-            ` : ``}
-          </div>
-        `;
-
-        orderList.appendChild(el);
-      });
+      orderList.appendChild(el);
     });
   });
+});
 </script>
-
 </body>
 </html>
