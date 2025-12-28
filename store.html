@@ -1,131 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Product | Blackwear</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Store — Blackwear</title>
+
+<!-- Fonts & Tailwind -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: "#ff7f00",
+          dark: "#0b0b0b",
+        },
+        fontFamily: { poppins: ["Poppins", "sans-serif"] },
+      },
+    },
+  };
+</script>
 
 <style>
-  *{box-sizing:border-box;font-family:Segoe UI,Arial;}
-  body{margin:0;background:#0f0f0f;color:#fff;}
-  header{background:#000;padding:14px;text-align:center;font-size:20px;font-weight:bold;color:#ff7f00;}
-  .container{padding:16px;max-width:1100px;margin:auto;}
-  .main-image{width:100%;max-height:420px;object-fit:cover;border-radius:18px;border:1px solid #222;cursor:pointer;}
-  .product-title{font-size:22px;margin:14px 0 6px;}
-  .price{color:#ff7f00;font-size:20px;font-weight:bold;}
-  .desc{color:#ccc;font-size:14px;line-height:1.6;margin:10px 0;}
-  .actions{display:flex;gap:10px;margin-top:14px;}
-  .actions button{flex:1;padding:12px;border-radius:14px;border:none;font-weight:bold;cursor:pointer;}
-  .cart-btn{background:#222;color:#fff;}
-  .buy-btn{background:#ff7f00;color:#000;}
-  .wishlist{margin-top:10px;font-size:14px;cursor:pointer;color:#ff7f00;}
-  .related{margin-top:30px;}
-  .related h3{margin-bottom:10px;}
-  .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .related-grid img{width:100%;height:120px;object-fit:cover;border-radius:12px;border:1px solid #222;cursor:pointer;transition:.2s;}
-  .related-grid img:hover{border-color:#ff7f00;}
-  footer{text-align:center;color:#666;padding:20px;font-size:13px;}
+  body { background:#0b0b0b; font-family:Poppins, sans-serif; }
 </style>
 </head>
-<body>
+<body class="min-h-screen text-white">
 
-<header>Blackwear</header>
+<!-- HEADER -->
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Blackwear Store</h1>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+</header>
 
-<div class="container">
-  <img id="mainImage" class="main-image" src="" alt="Product">
-  <h2 id="title" class="product-title"></h2>
-  <div id="price" class="price"></div>
-  <p id="desc" class="desc"></p>
-
-  <div class="actions">
-    <button class="cart-btn" onclick="addToCart()">Add to Cart</button>
-    <button class="buy-btn" onclick="buyNow()">Buy Now</button>
+<!-- FILTERS -->
+<section class="p-5 max-w-6xl mx-auto">
+  <div class="flex flex-wrap gap-3 mb-6">
+    <button data-filter="all" class="filter-btn bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">All</button>
+    <button data-filter="men" class="filter-btn bg-[#111] border border-gray-700 px-4 py-2 rounded-lg text-sm">Men</button>
+    <button data-filter="women" class="filter-btn bg-[#111] border border-gray-700 px-4 py-2 rounded-lg text-sm">Women</button>
+    <button data-filter="kids" class="filter-btn bg-[#111] border border-gray-700 px-4 py-2 rounded-lg text-sm">Kids</button>
   </div>
 
-  <div class="wishlist" onclick="addWishlist()">❤️ Add to Wishlist</div>
+  <!-- LOADING -->
+  <div id="loading" class="text-center text-gray-400">Loading products...</div>
 
-  <div class="related">
-    <h3>Related Products</h3>
-    <div class="related-grid" id="relatedGrid"></div>
-  </div>
-</div>
+  <!-- EMPTY -->
+  <div id="empty" class="hidden text-center text-gray-400">No products found.</div>
 
-<footer>© 2025 Blackwear</footer>
+  <!-- PRODUCT GRID -->
+  <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5"></div>
+</section>
 
+<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, query, where, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
+  projectId: "blackwear-14a31",
+  storageBucket: "blackwear-14a31.appspot.com",
+  messagingSenderId: "222479690292",
+  appId: "1:222479690292:web:82bd91e186da6412133861"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
-let currentProduct = null;
-const params = new URLSearchParams(window.location.search);
-const productId = params.get("id");
+const grid = document.getElementById("productGrid");
+const loading = document.getElementById("loading");
+const empty = document.getElementById("empty");
+const filterBtns = document.querySelectorAll(".filter-btn");
 
-signInAnonymously(auth).then(loadProduct);
+let allProducts = [];
+let activeFilter = "all";
 
-function escapeHtml(s){ return String(s||''); }
+// Render products
+function renderProducts() {
+  grid.innerHTML = "";
 
-async function loadProduct(){
-  const docSnap = await getDoc(doc(db, "products", productId));
-  if(!docSnap.exists()){
-    alert("Product not found");
+  const filtered = activeFilter === "all"
+    ? allProducts
+    : allProducts.filter(p => (p.category || "").toLowerCase() === activeFilter);
+
+  if (!filtered.length) {
+    empty.classList.remove("hidden");
     return;
   }
 
-  const p = docSnap.data();
-  currentProduct = {id: docSnap.id, ...p};
+  empty.classList.add("hidden");
 
-  const mainImg = p.image || (Array.isArray(p.images) && p.images.length ? p.images[0] : "");
-  document.getElementById("mainImage").src = mainImg;
-  document.getElementById("title").innerText = escapeHtml(p.name);
-  document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
-  document.getElementById("desc").innerText = escapeHtml(p.description || "No description available");
+  filtered.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "bg-[#111] border border-gray-700 rounded-xl overflow-hidden shadow-lg hover:border-brand transition cursor-pointer";
 
-  // Load related products (same category)
-  if(p.category){
-    const q = query(collection(db, "products"), where("category", "==", p.category), limit(3));
-    const relatedSnap = await getDocs(q);
-    const relatedGrid = document.getElementById("relatedGrid");
-    relatedGrid.innerHTML = "";
+    card.innerHTML = `
+      <img src="${p.image || 'https://via.placeholder.com/400'}" class="w-full h-40 object-cover" />
+      <div class="p-3">
+        <h3 class="font-semibold text-sm mb-1">${p.name || 'Product'}</h3>
+        <p class="text-xs text-gray-400 mb-2">₦${Number(p.price || 0).toLocaleString()}</p>
+        <button class="w-full bg-brand text-black py-2 rounded-lg text-sm font-semibold">View</button>
+      </div>
+    `;
 
-    relatedSnap.forEach(doc => {
-      if(doc.id === productId) return; // exclude current product
-      const data = doc.data();
-      const imgEl = document.createElement("img");
-      imgEl.src = data.image || "";
-      imgEl.title = data.name || "";
-      imgEl.onclick = () => window.location.href = `product.html?id=${doc.id}`;
-      relatedGrid.appendChild(imgEl);
-    });
-  }
+    // Button click
+    card.querySelector("button").onclick = (e) => {
+      e.stopPropagation();
+      window.location.href = `product.html?id=${p.id}`;
+    };
+
+    // Entire card clickable
+    card.onclick = () => {
+      window.location.href = `product.html?id=${p.id}`;
+    };
+
+    grid.appendChild(card);
+  });
 }
 
-function addToCart(){
-  if(!currentProduct) return;
-  alert(`Added "${currentProduct.name}" to cart`);
-  // Implement Firestore or localStorage cart logic here
-}
+// Load products from Firestore
+onSnapshot(collection(db, "products"), (snap) => {
+  allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  loading.classList.add("hidden");
+  renderProducts();
+});
 
-function buyNow(){
-  if(!currentProduct) return;
-  window.location.href = `checkout.html?id=${productId}`;
-}
-
-function addWishlist(){
-  if(!currentProduct) return;
-  alert(`Added "${currentProduct.name}" to wishlist`);
-  // Implement wishlist Firestore logic here
-}
+// Filter buttons
+filterBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    filterBtns.forEach(b => b.classList.remove("bg-brand", "text-black"));
+    btn.classList.add("bg-brand", "text-black");
+    activeFilter = btn.dataset.filter;
+    renderProducts();
+  });
+});
 </script>
 
 </body>
