@@ -13,6 +13,8 @@
   .product-title{font-size:22px;margin:14px 0 6px;}
   .price{color:#ff7f00;font-size:20px;font-weight:bold;}
   .desc{color:#ccc;font-size:14px;line-height:1.6;margin:10px 0;}
+  .quantity{display:flex;align-items:center;gap:10px;margin:10px 0;}
+  .quantity button{padding:6px 12px;border:none;border-radius:8px;background:#222;color:#fff;cursor:pointer;font-weight:bold;}
   .actions{display:flex;gap:10px;margin-top:14px;}
   .actions button{flex:1;padding:12px;border-radius:14px;border:none;font-weight:bold;cursor:pointer;}
   .cart-btn{background:#222;color:#fff;}
@@ -36,15 +38,21 @@
   <div id="price" class="price"></div>
   <p id="desc" class="desc"></p>
 
-  <div class="actions">
-    <button class="cart-btn" onclick="addToCart()">Add to Cart</button>
-    <button class="buy-btn" onclick="buyNow()">Buy Now</button>
+  <div class="quantity">
+    <button id="decreaseQty">-</button>
+    <span id="quantityValue">1</span>
+    <button id="increaseQty">+</button>
   </div>
 
-  <div class="wishlist" onclick="addWishlist()">❤️ Add to Wishlist</div>
+  <div class="actions">
+    <button class="cart-btn" id="addCartBtn">Add to Cart</button>
+    <button class="buy-btn" id="buyNowBtn">Buy Now</button>
+  </div>
+
+  <div class="wishlist" id="wishlistBtn">❤️ Add to Wishlist</div>
 
   <div class="related">
-    <h3>Related Images</h3>
+    <h3>Related Products</h3>
     <div class="related-grid" id="relatedGrid"></div>
   </div>
 </div>
@@ -55,15 +63,20 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script>
+  // Firebase setup
   firebase.initializeApp({
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
     projectId: "blackwear-14a31"
   });
+
   const db = firebase.firestore();
   const auth = firebase.auth();
+  const el = id => document.getElementById(id);
 
   let currentProduct = null;
+  let quantity = 1;
+
   const params = new URLSearchParams(window.location.search);
   const productId = params.get("id");
 
@@ -78,126 +91,73 @@
     const p = snap.data();
     currentProduct = {id: snap.id, ...p};
 
-    const mainImg = p.image || (Array.isArray(p.images) && p.images.length ? p.images[0] : "");
-    document.getElementById("mainImage").src = mainImg;
-    document.getElementById("title").innerText = escapeHtml(p.name);
-    document.getElementById("price").innerText = "₦" + Number(p.price||0).toLocaleString();
-    document.getElementById("desc").innerText = escapeHtml(p.description || "No description available");
+    el("mainImage").src = p.image || (Array.isArray(p.images) && p.images.length ? p.images[0] : "");
+    el("title").innerText = escapeHtml(p.name);
+    el("price").innerText = "₦" + Number(p.price||0).toLocaleString();
+    el("desc").innerText = escapeHtml(p.description || "No description available");
 
-    const relatedGrid = document.getElementById("relatedGrid");
+    // Quantity
+    el("quantityValue").innerText = quantity;
+    el("increaseQty").onclick = () => { quantity++; el("quantityValue").innerText = quantity; }
+    el("decreaseQty").onclick = () => { if(quantity>1) quantity--; el("quantityValue").innerText = quantity; }
+
+    // Related products by same category
+    loadRelatedProducts(p.category);
+  }
+
+  async function loadRelatedProducts(category){
+    const relatedGrid = el("relatedGrid");
     relatedGrid.innerHTML = "";
 
-    if(p.images && p.images.length){
-      p.images.slice(0,3).forEach(imgUrl => {
-        const imgEl = document.createElement("img");
-        imgEl.src = imgUrl;
-        imgEl.onclick = () => {
-          window.location.href = "product.html?id=" + productId + "&img=" + encodeURIComponent(imgUrl);
-        };
-        relatedGrid.appendChild(imgEl);
-      });
-    }
+    const snap = await db.collection("products")
+      .where("category","==",category)
+      .limit(3)
+      .get();
 
-    // If URL has ?img=, show that image as main
-    const selectedImg = params.get("img");
-    if(selectedImg){
-      document.getElementById("mainImage").src = decodeURIComponent(selectedImg);
-    }
-
-    document.getElementById("mainImage").onclick = () => {
-      // Open full screen or product page logic
-      window.location.href = "product.html?id=" + productId;
-    };
+    snap.forEach(doc => {
+      if(doc.id === productId) return;
+      const p = doc.data();
+      const imgEl = document.createElement("img");
+      imgEl.src = p.image || (p.images ? p.images[0] : "");
+      imgEl.onclick = () => window.location.href = "product.html?id=" + doc.id;
+      relatedGrid.appendChild(imgEl);
+    });
   }
 
-  function addToCart(){
+  // Add to cart
+  el("addCartBtn").onclick = async () => {
     if(!currentProduct) return;
-    alert(`Added "${currentProduct.name}" to cart`);
-    // TODO: implement Firestore or localStorage cart logic
-  }
-
-  function buyNow(){
-    if(!currentProduct) return;
-    window.location.href = "checkout.html?id=" + productId;
-  }
-
-  function addWishlist(){
-    const user = auth.currentUser;
-    if(!user || !currentProduct){ alert("Please wait..."); return; }
-    db.collection("wishlist").add({
-      userId: user.uid,
-      productId: productId,
-      name: currentProduct.name || "",
-      price: currentProduct.price || 0,
-      image: currentProduct.image || (currentProduct.images ? currentProduct.images[0] : ""),
+    await db.collection("cart").add({
+      userId: auth.currentUser.uid,
+      productId: currentProduct.id,
+      productName: currentProduct.name,
+      price: currentProduct.price,
+      quantity: quantity,
+      image: currentProduct.image || "",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(()=>{
-      alert("Added to wishlist ❤️");
-    }).catch(err=>{
-      console.error(err);
-      alert("Failed to add to wishlist");
     });
-  }
-</script>
+    alert(`Added ${quantity} "${currentProduct.name}" to cart ✅`);
+  };
 
- <!-- Your product list HTML here -->
-<div class="product">
-  <h3>Kid Hoodie</h3>
-  <p>₦1500</p>
-  <button class="buy-now-btn" 
-          data-id="abc123" 
-          data-name="Kid Hoodie" 
-          data-price="1500" 
-          data-image="https://i.imgur.com/3ZQ3Q0P.jpeg">
-    Buy Now
-  </button>
-</div>
+  // Buy now
+  el("buyNowBtn").onclick = () => {
+    if(!currentProduct) return;
+    window.location.href = "checkout.html?id=" + currentProduct.id + "&qty=" + quantity;
+  };
 
-<!-- Firebase scripts -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-  const firebaseConfig = { /* your config */ };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-
-  signInAnonymously(auth);
-
-  async function placeOrder(product) {
-    if (!auth.currentUser) return alert("User not authenticated");
-
-    try {
-      await addDoc(collection(db, "orders"), {
-        userId: auth.currentUser.uid,
-        productId: product.id,
-        productName: product.name,
-        price: product.price,
-        quantity: product.quantity || 1,
-        image: product.image || "",
-        status: "pending",
-        createdAt: serverTimestamp()
-      });
-      alert("Order placed successfully ✅");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to place order ❌");
-    }
-  }
-
-  document.querySelectorAll(".buy-now-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const product = {
-        id: btn.dataset.id,
-        name: btn.dataset.name,
-        price: Number(btn.dataset.price),
-        image: btn.dataset.image
-      };
-      placeOrder(product);
+  // Wishlist
+  el("wishlistBtn").onclick = async () => {
+    if(!currentProduct) return;
+    await db.collection("wishlist").add({
+      userId: auth.currentUser.uid,
+      productId: currentProduct.id,
+      name: currentProduct.name,
+      price: currentProduct.price,
+      image: currentProduct.image || "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-  });
+    alert("Added to wishlist ❤️");
+  };
 </script>
 
 </body>
