@@ -1,171 +1,159 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Checkout | Blackwear</title>
-<style>
-body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.card{max-width:900px;margin:auto;background:#141414;border-radius:14px;padding:18px}
-h1,h2{margin:0 0 10px;color:#ff7f00}
-input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
-.btn{margin-top:14px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
-.total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{background:#000;padding:10px;border-radius:10px;color:#ff7f00;margin-top:10px}
-</style>
-</head>
-<body>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Checkout — Blackwear</title>
 
-<div class="card">
-  <h1>Checkout</h1>
-
-  <h2>Customer</h2>
-  <input id="name" placeholder="Full name">
-  <input id="phone" placeholder="Phone number">
-  <textarea id="address" placeholder="Delivery address"></textarea>
-
-  <h2>Order Summary</h2>
-  <div id="items">Loading cart...</div>
-  <div class="total" id="total">₦0</div>
-
-  <h2>Payment</h2>
-  <div class="bank">
-    <strong>Bank Transfer (Opay)</strong><br><br>
-    Account Name: Olaniyi Funke<br>
-    Bank: Opay<br>
-    Account Number: 8117854139<br><br>
-    After payment, click <b>Confirm Order</b>.<br>
-    Send proof to support if requested.
-  </div>
-
-  <button class="btn" id="confirmOrder">Confirm Order</button>
-</div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
 
 <script>
-try {
-  // Firebase initialization
-  firebase.initializeApp({
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
-  });
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+      fontFamily: { poppins: ["Poppins", "sans-serif"] },
+    },
+  },
+};
+</script>
 
-  emailjs.init("61XKawCOBMidGo2by");
+<style>
+body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+input, button { font-family: inherit; }
+</style>
+</head>
+<body class="min-h-screen text-white">
 
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const el = id => document.getElementById(id);
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Checkout</h1>
+  <a href="cart.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back to Cart</a>
+</header>
 
-  let CART = [];
-  let TOTAL = 0;
-  let submitting = false;
+<main class="p-5 max-w-4xl mx-auto space-y-6">
 
-  // Ensure anonymous login
-  auth.onAuthStateChanged(async user => {
-    if (!user) await auth.signInAnonymously();
-    loadCart();
-  });
+  <div id="cartContainer" class="space-y-3">
+    <h2 class="text-lg font-semibold text-brand">Your Cart</h2>
+    <div id="cartItems" class="space-y-2"></div>
+    <p class="text-right font-semibold text-brand">Total: ₦<span id="totalPrice">0</span></p>
+  </div>
 
-  // Load cart items
-  async function loadCart() {
-    try {
-      const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
-      CART = [];
-      TOTAL = 0;
-      el("items").innerHTML = "";
+  <div id="checkoutForm" class="space-y-4">
+    <h2 class="text-lg font-semibold text-brand">Customer Info</h2>
+    <input id="customerName" type="text" placeholder="Full Name" class="w-full p-3 rounded-lg bg-[#111] border border-gray-700 text-white"/>
+    <input id="customerPhone" type="text" placeholder="Phone Number" class="w-full p-3 rounded-lg bg-[#111] border border-gray-700 text-white"/>
+    <input id="customerAddress" type="text" placeholder="Delivery Address" class="w-full p-3 rounded-lg bg-[#111] border border-gray-700 text-white"/>
+    <button id="confirmOrderBtn" class="w-full bg-brand text-black py-3 rounded-lg font-semibold">Confirm Order</button>
+  </div>
 
-      if (snap.empty) {
-        el("items").innerHTML = "<p>Your cart is empty</p>";
-        el("total").textContent = "₦0";
-        return;
-      }
+</main>
 
-      snap.forEach(doc => {
-        const p = doc.data();
-        CART.push({...p,id:doc.id});
-        TOTAL += Number(p.price) * (p.quantity || 1);
-        el("items").innerHTML += `
-          <div class="order-item">
-            <span>${p.productName || p.name}</span>
-            <span>₦${Number(p.price).toLocaleString()}</span>
-          </div>`;
-      });
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-      el("total").textContent = "₦" + TOTAL.toLocaleString();
-    } catch(err) {
-      console.error("Error loading cart:", err);
-      el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
-    }
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31",
+  storageBucket: "blackwear-14a31.firebasestorage.app",
+  messagingSenderId: "222479690292",
+  appId: "1:222479690292:web:82bd91e186da6412133861"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const cartItemsEl = document.getElementById("cartItems");
+const totalPriceEl = document.getElementById("totalPrice");
+const confirmBtn = document.getElementById("confirmOrderBtn");
+const nameInput = document.getElementById("customerName");
+const phoneInput = document.getElementById("customerPhone");
+const addressInput = document.getElementById("customerAddress");
+
+let cartData = [];
+let total = 0;
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    alert("Please sign in first.");
+    window.location.href = "login.html";
+    return;
   }
 
-  // Confirm Order click
-  el("confirmOrder").onclick = async () => {
-    if (submitting) return;
-    const name = el("name").value.trim();
-    const phone = el("phone").value.trim();
-    const address = el("address").value.trim();
+  // Load user cart
+  const q = query(collection(db, "cart"), where("userId", "==", user.uid));
+  const snap = await getDocs(q);
 
-    if (!name || !phone || !address) return alert("Fill all customer details");
-    if (!CART.length) return alert("Your cart is empty");
+  cartItemsEl.innerHTML = "";
+  total = 0;
+  cartData = [];
 
-    submitting = true;
+  if (snap.empty) {
+    cartItemsEl.innerHTML = '<p class="text-gray-400">Your cart is empty.</p>';
+    totalPriceEl.innerText = "0";
+    return;
+  }
 
-    try {
-      const orderRef = await db.collection("orders").add({
-        userId: auth.currentUser.uid,
-        customer: { name, phone, address },
-        items: CART,
-        total: TOTAL,
-        payment: {
-          method: "Opay Bank Transfer",
-          reference: "OPAY-" + Date.now(),
-          status: "awaiting_confirmation"
-        },
-        orderStatus: "pending_admin_approval",
-        deliveryStatus: "not_shipped",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  snap.forEach(doc => {
+    const item = doc.data();
+    cartData.push({ id: doc.id, ...item });
+    total += item.price * (item.qty || 1);
+
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-[#111] p-3 rounded-lg";
+    div.innerHTML = `
+      <span>${item.name} x${item.qty || 1}</span>
+      <span>₦${(item.price * (item.qty || 1)).toLocaleString()}</span>
+    `;
+    cartItemsEl.appendChild(div);
+  });
+
+  totalPriceEl.innerText = total.toLocaleString();
+});
+
+// Confirm order
+confirmBtn.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const address = addressInput.value.trim();
+
+  if (!name || !phone || !address) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  try {
+    for (let item of cartData) {
+      await addDoc(collection(db, "orders"), {
+        userId: user.uid,
+        productId: item.id,
+        productName: item.name,
+        price: item.price,
+        qty: item.qty || 1,
+        address,
+        phone,
+        name,
+        status: "pending",
+        createdAt: serverTimestamp()
       });
-
-      // Save orderId
-      await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
-
-      // Clear cart
-      const batch = db.batch();
-      CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
-      await batch.commit();
-
-      // Send receipt
-      emailjs.send("service_wu4fetn","template_pjd78fl",{
-        to_name: name,
-        order_id: orderRef.id,
-        order_total: "₦"+TOTAL.toLocaleString(),
-        payment_method: "Opay Bank Transfer",
-        payment_ref: "OPAY"
-      }).catch(()=>{});
-
-      alert("Order placed successfully!");
-      location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
-
-    } catch(err) {
-      console.error("Error placing order:", err);
-      alert("Failed to place order. Try again.");
-      submitting = false;
     }
-  };
 
-} catch(globalErr) {
-  console.error("Checkout page error:", globalErr);
-  document.body.innerHTML = "<p style='color:red;text-align:center;margin-top:50px;'>Error loading checkout. Please refresh.</p>";
-}
+    alert("Order placed successfully!");
+    window.location.href = "orders.html";
+  } catch (err) {
+    console.error(err);
+    alert("Failed to place order. Try again.");
+  }
+});
 </script>
+
 </body>
 </html>
