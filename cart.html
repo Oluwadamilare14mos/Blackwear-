@@ -52,6 +52,26 @@ object-fit:cover
 .cart-info{flex:1}
 .cart-info h3{font-size:15px;margin-bottom:4px}
 .cart-info p{color:#ff7f00;font-weight:bold}
+.qty-controls{
+margin-top:6px;
+display:flex;
+align-items:center;
+gap:8px;
+}
+.qty-controls button{
+background:#000;
+color:#ff7f00;
+border:1px solid #ff7f00;
+padding:4px 10px;
+border-radius:10px;
+cursor:pointer;
+font-size:12px;
+}
+.qty-controls span{
+min-width:20px;
+text-align:center;
+display:inline-block;
+}
 
 .cart-actions button{
 background:#000;
@@ -168,7 +188,8 @@ return;
 
 snap.forEach(doc=>{
 const item=doc.data();
-total+=item.price * (item.qty || 1);
+const qty=item.qty||1;
+total+=item.price*qty;
 
 const div=document.createElement("div");
 div.className="cart-item";
@@ -177,6 +198,11 @@ div.innerHTML=`
 <div class="cart-info">
 <h3>${item.name}</h3>
 <p>₦${Number(item.price).toLocaleString()}</p>
+<div class="qty-controls">
+  <button onclick="updateQty('${doc.id}', -1)">-</button>
+  <span id="qty-${doc.id}">${qty}</span>
+  <button onclick="updateQty('${doc.id}', 1)">+</button>
+</div>
 </div>
 <div class="cart-actions">
 <button onclick="removeItem('${doc.id}')">Remove</button>
@@ -188,6 +214,20 @@ container.appendChild(div);
 document.getElementById("totalPrice").innerText=
 "₦"+total.toLocaleString();
 document.getElementById("summary").style.display="block";
+}
+
+async function updateQty(id, change){
+const docRef=db.collection("cart").doc(id);
+const docSnap=await docRef.get();
+if(!docSnap.exists) return;
+
+let qty=docSnap.data().qty||1;
+qty+=change;
+if(qty<1) qty=1;
+
+await docRef.update({qty});
+document.getElementById("qty-"+id).innerText=qty;
+loadCart();
 }
 
 async function removeItem(id){
@@ -220,7 +260,6 @@ async function clearUserCart(){
 
   await batch.commit();
 }
-  
 </script>
 
 </body>
