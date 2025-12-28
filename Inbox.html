@@ -24,7 +24,7 @@
   </script>
 
   <style>
-    body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
   </style>
 </head>
 <body class="min-h-screen text-white">
@@ -42,11 +42,19 @@
   <div id="messagesList" class="space-y-5 hidden"></div>
 </main>
 
+<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -57,60 +65,70 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
-const q = query(collection(db, "supportMessages"), orderBy("createdAt", "desc"));
-
-onSnapshot(q, (snap) => {
-  messagesList.innerHTML = "";
-
-  if (snap.empty) {
-    emptyState.classList.remove("hidden");
-    messagesList.classList.add("hidden");
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    emptyState.innerText = "Please log in to view your inbox.";
     return;
   }
 
-  emptyState.classList.add("hidden");
-  messagesList.classList.remove("hidden");
+  const q = query(
+    collection(db, "supportMessages"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
 
-  snap.forEach(doc => {
-    const msg = doc.data();
+  onSnapshot(q, (snap) => {
+    messagesList.innerHTML = "";
 
-    const el = document.createElement("div");
-    el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
-
-    // Build replies HTML
-    let repliesHTML = "";
-    if (Array.isArray(msg.replies) && msg.replies.length) {
-      repliesHTML = `<div class="mt-3 space-y-2">`;
-      msg.replies.forEach(reply => {
-        if(reply && reply.trim() !== "") {
-          repliesHTML += `
-            <div class="bg-reply p-3 rounded-lg text-gray-200 text-sm">
-              💬 ${reply}
-            </div>
-          `;
-        }
-      });
-      repliesHTML += `</div>`;
+    if (snap.empty) {
+      emptyState.classList.remove("hidden");
+      messagesList.classList.add("hidden");
+      return;
     }
 
-    el.innerHTML = `
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="font-semibold text-brand">${msg.name || "User"}</h3>
-        <span class="text-xs text-gray-400">${msg.createdAt?.toDate().toLocaleString() || ""}</span>
-      </div>
+    emptyState.classList.add("hidden");
+    messagesList.classList.remove("hidden");
 
-      <p class="text-gray-300">${msg.message || ""}</p>
-      <p class="text-xs text-gray-500 mt-1">${msg.email || ""} | ${msg.phone || ""}</p>
+    snap.forEach(doc => {
+      const msg = doc.data();
 
-      ${repliesHTML}
-    `;
+      let repliesHTML = "";
+      if (Array.isArray(msg.replies)) {
+        repliesHTML = `<div class="mt-3 space-y-2">`;
+        msg.replies.forEach(r => {
+          repliesHTML += `
+            <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
+              💬 ${r}
+            </div>
+          `;
+        });
+        repliesHTML += `</div>`;
+      }
 
-    messagesList.appendChild(el);
+      const el = document.createElement("div");
+      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+
+      el.innerHTML = `
+        <div class="flex justify-between mb-2">
+          <h3 class="font-semibold text-brand">Support</h3>
+          <span class="text-xs text-gray-400">
+            ${msg.createdAt?.toDate().toLocaleString() || ""}
+          </span>
+        </div>
+
+        <p class="text-gray-300">${msg.message || ""}</p>
+
+        ${repliesHTML}
+      `;
+
+      messagesList.appendChild(el);
+    });
   });
 });
 </script>
