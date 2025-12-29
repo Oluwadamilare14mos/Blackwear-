@@ -4,33 +4,17 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Checkout | Blackwear</title>
-
 <style>
 body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
 .card{max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px}
 h1,h2{margin:0 0 12px;color:#ff7f00}
-input,textarea{
-  width:100%;padding:12px;margin-top:8px;
-  border-radius:10px;border:1px solid #333;
-  background:#000;color:#fff
-}
-.btn{
-  margin-top:18px;padding:14px;border:none;border-radius:14px;
-  background:#ff7f00;color:#000;font-weight:bold;
-  width:100%;cursor:pointer
-}
-.order-item{
-  display:flex;justify-content:space-between;
-  font-size:14px;margin-top:6px
-}
+input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
+.btn{margin-top:18px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
+.order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
 .total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{
-  background:#000;padding:12px;border-radius:10px;
-  color:#ff7f00;margin-top:10px
-}
+.bank{background:#000;padding:12px;border-radius:10px;color:#ff7f00;margin-top:10px}
 </style>
 </head>
-
 <body>
 
 <div class="card">
@@ -57,7 +41,6 @@ input,textarea{
   <button class="btn" id="confirmOrder">Confirm Order</button>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -71,14 +54,13 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 const el = id => document.getElementById(id);
 
 let CART = [];
 let TOTAL = 0;
 let submitting = false;
 
-/* ---------- AUTH ---------- */
+// Ensure user is signed in
 auth.onAuthStateChanged(async user => {
   if (!user) {
     await auth.signInAnonymously();
@@ -87,12 +69,9 @@ auth.onAuthStateChanged(async user => {
   loadCart(user.uid);
 });
 
-/* ---------- LOAD CART ---------- */
+// Load cart
 async function loadCart(uid){
-  const snap = await db.collection("cart")
-    .where("userId","==",uid)
-    .get();
-
+  const snap = await db.collection("cart").where("userId","==",uid).get();
   CART = [];
   TOTAL = 0;
   el("items").innerHTML = "";
@@ -106,27 +85,23 @@ async function loadCart(uid){
   snap.forEach(doc=>{
     const p = doc.data();
     const qty = p.qty || p.quantity || 1;
-
     CART.push({ id: doc.id, ...p, qty });
     TOTAL += Number(p.price) * qty;
-
-    el("items").innerHTML += `
-      <div class="order-item">
-        <span>${p.productName || p.name} × ${qty}</span>
-        <span>₦${Number(p.price).toLocaleString()}</span>
-      </div>`;
+    el("items").innerHTML += `<div class="order-item">
+      <span>${p.productName || p.name} × ${qty}</span>
+      <span>₦${Number(p.price).toLocaleString()}</span>
+    </div>`;
   });
 
   el("total").innerText = "₦" + TOTAL.toLocaleString();
 }
 
-/* ---------- CONFIRM ORDER ---------- */
+// Confirm order
 el("confirmOrder").onclick = async () => {
   if (!auth.currentUser) {
     alert("Please wait, signing you in…");
     return;
   }
-
   if (submitting) return;
   submitting = true;
 
@@ -138,13 +113,13 @@ el("confirmOrder").onclick = async () => {
     submitting = false;
     return alert("Fill all customer details");
   }
-
   if (!CART.length) {
     submitting = false;
     return alert("Your cart is empty");
   }
 
   try {
+    // Place order
     const orderRef = await db.collection("orders").add({
       userId: auth.currentUser.uid,
       customer: { name, phone, address },
@@ -153,6 +128,7 @@ el("confirmOrder").onclick = async () => {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // Clear cart
     const batch = db.batch();
     CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
     await batch.commit();
