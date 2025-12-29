@@ -3,149 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Your Order | Blackwear</title>
+<title>Track Order — Blackwear</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.container{max-width:900px;margin:auto;background:#141414;padding:20px;border-radius:12px}
-h1{color:#ff7f00}
-label{font-weight:bold;margin-top:10px;display:block}
-input{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:none;background:#000;color:#fff}
-.btn{margin-top:12px;padding:12px;border:none;border-radius:12px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.order-info{margin-top:20px;padding:14px;background:#000;border-radius:10px}
-.order-item{display:flex;justify-content:space-between;border-bottom:1px solid #333;padding:6px 0}
-.total{font-weight:bold;margin-top:10px;color:#ff7f00}
-.error{color:red;margin-top:10px;background:#330000;padding:10px;border-radius:8px}
-.progress-container{background:#333;height:12px;border-radius:6px;margin:10px 0}
-.progress-bar{height:12px;border-radius:6px;background:#ff7f00;width:0%}
+  body { background:#0b0b0b; font-family:Poppins,sans-serif; color:#fff; min-height:100vh; margin:0; padding:20px; }
+  .card { max-width:700px; margin:auto; background:#141414; border-radius:16px; padding:20px; }
+  h1,h2,h3 { margin:0 0 10px; color:#ff7f00; }
+  .section { margin-bottom:20px; }
+  .item { display:flex; justify-content:space-between; margin-top:6px; }
+  .status { font-weight:bold; padding:4px 8px; border-radius:6px; }
+  .status.pending { background:#fbbf24; color:#000; }
+  .status.shipped { background:#3b82f6; color:#fff; }
+  .status.delivered { background:#16a34a; color:#fff; }
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
   <h1>Track Your Order</h1>
-  <label>Enter your Order ID:</label>
-  <input type="text" id="orderIdInput" placeholder="Order ID">
-  <button class="btn" id="trackBtn">Track Order</button>
 
-  <div id="error" class="error" style="display:none"></div>
-  <div id="orderDetails" class="order-info" style="display:none">
-    <h2>Customer Info</h2>
-    <p id="customerName"></p>
-    <p id="customerPhone"></p>
-    <p id="customerAddress"></p>
+  <div id="loading" class="section text-gray-400">Loading order...</div>
+  <div id="error" class="section text-red-500 hidden">Order not found or cannot be accessed.</div>
 
-    <h2>Items</h2>
-    <div id="items"></div>
-
-    <p class="total">Total: <span id="totalPrice"></span></p>
-
-    <h2>Payment</h2>
-    <p id="paymentMethod"></p>
-    <p id="paymentRef"></p>
-    <p id="paymentStatus"></p>
-
-    <h2>Order Status</h2>
-    <p id="orderStatus"></p>
-    <p id="deliveryStatus"></p>
-
-    <h2>Delivery Progress</h2>
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
+  <div id="orderDetails" class="hidden">
+    <div class="section">
+      <h2>Order Info</h2>
+      <p><strong>Order ID:</strong> <span id="orderId"></span></p>
+      <p><strong>Status:</strong> <span id="orderStatus" class="status"></span></p>
+      <p><strong>Placed:</strong> <span id="orderDate"></span></p>
     </div>
-    <p>Estimated Delivery: <span id="estimatedDelivery"></span></p>
+
+    <div class="section">
+      <h2>Customer Details</h2>
+      <p><strong>Name:</strong> <span id="customerName"></span></p>
+      <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
+      <p><strong>Address:</strong> <span id="customerAddress"></span></p>
+    </div>
+
+    <div class="section">
+      <h2>Items</h2>
+      <div id="itemsList"></div>
+      <p class="mt-2 font-bold">Total: ₦<span id="totalAmount"></span></p>
+    </div>
   </div>
 </div>
 
 <!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-<script>
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
-});
-
-const db = firebase.firestore();
-const el = id => document.getElementById(id);
-
-async function loadOrder(orderId){
-  el("error").style.display = "none";
-  el("orderDetails").style.display = "none";
-
-  try {
-    const docRef = db.collection("orders").doc(orderId);
-    const docSnap = await docRef.get();
-
-    if(!docSnap.exists){
-      el("error").textContent = "Order not found";
-      el("error").style.display = "block";
-      return;
-    }
-
-    const data = docSnap.data();
-
-    // Customer
-    el("customerName").textContent = "Name: " + data.customer.name;
-    el("customerPhone").textContent = "Phone: " + data.customer.phone;
-    el("customerAddress").textContent = "Address: " + data.customer.address;
-
-    // Items
-    const itemsDiv = el("items");
-    itemsDiv.innerHTML = "";
-    data.items.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "order-item";
-      div.innerHTML = `<span>${item.productName || item.name}</span><span>₦${Number(item.price).toLocaleString()} x ${item.quantity || 1}</span>`;
-      itemsDiv.appendChild(div);
-    });
-
-    // Total
-    el("totalPrice").textContent = "₦" + Number(data.total).toLocaleString();
-
-    // Payment
-    el("paymentMethod").textContent = "Method: " + data.payment.method;
-    el("paymentRef").textContent = "Reference: " + data.payment.reference;
-    el("paymentStatus").textContent = "Status: " + data.payment.status;
-
-    // Order status
-    el("orderStatus").textContent = "Order Status: " + data.orderStatus;
-    el("deliveryStatus").textContent = "Delivery Status: " + data.deliveryStatus;
-
-    // Delivery progress
-    const progress = data.deliveryProgress || 0;
-    el("progressBar").style.width = progress + "%";
-
-    // Estimated delivery
-    el("estimatedDelivery").textContent = data.estimatedDelivery || "—";
-
-    el("orderDetails").style.display = "block";
-  } catch(err){
-    console.error(err);
-    el("error").textContent = "Error loading order";
-    el("error").style.display = "block";
-  }
-}
-
-// Track button
-el("trackBtn").onclick = () => {
-  const id = el("orderIdInput").value.trim();
-  if(id) loadOrder(id);
-  else {
-    el("error").textContent = "Please enter an Order ID";
-    el("error").style.display = "block";
-  }
 };
 
-// Auto load if orderId is in URL
-const urlParams = new URLSearchParams(window.location.search);
-const orderIdFromURL = urlParams.get("id");
-if(orderIdFromURL){
-  el("orderIdInput").value = orderIdFromURL;
-  loadOrder(orderIdFromURL);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get("id");
+
+const loadingEl = document.getElementById("loading");
+const errorEl = document.getElementById("error");
+const orderDetailsEl = document.getElementById("orderDetails");
+
+if (!orderId) {
+  loadingEl.style.display = "none";
+  errorEl.textContent = "No order ID provided in URL.";
+  errorEl.classList.remove("hidden");
+} else {
+  async function loadOrder() {
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+
+      if (!orderSnap.exists()) {
+        throw new Error("Order not found");
+      }
+
+      const order = orderSnap.data();
+
+      // Display order info
+      document.getElementById("orderId").textContent = orderId;
+      const statusEl = document.getElementById("orderStatus");
+      const status = order.orderStatus || "pending";
+      statusEl.textContent = status.replace(/_/g, " ");
+      statusEl.className = "status " + status;
+
+      const createdAt = order.createdAt?.toDate?.() || new Date();
+      document.getElementById("orderDate").textContent = createdAt.toLocaleString();
+
+      // Customer info
+      const c = order.customer || {};
+      document.getElementById("customerName").textContent = c.name || "-";
+      document.getElementById("customerPhone").textContent = c.phone || "-";
+      document.getElementById("customerAddress").textContent = c.address || "-";
+
+      // Items
+      const itemsList = document.getElementById("itemsList");
+      itemsList.innerHTML = "";
+      let total = 0;
+      (order.items || []).forEach(item => {
+        const qty = item.qty || item.quantity || 1;
+        const price = Number(item.price || 0);
+        total += price * qty;
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `<span>${item.productName || item.name} × ${qty}</span><span>₦${price.toLocaleString()}</span>`;
+        itemsList.appendChild(div);
+      });
+      document.getElementById("totalAmount").textContent = total.toLocaleString();
+
+      // Show order details
+      loadingEl.style.display = "none";
+      orderDetailsEl.classList.remove("hidden");
+    } catch (err) {
+      console.error("Error loading order:", err);
+      loadingEl.style.display = "none";
+      errorEl.classList.remove("hidden");
+    }
+  }
+
+  loadOrder();
 }
 </script>
 
 </body>
-  </html>
+</html>
