@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Checkout | Blackwear</title>
 <style>
 body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
@@ -21,8 +21,8 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
   <h1>Checkout</h1>
 
   <h2>Customer Details</h2>
-  <input id="name" placeholder="Full name">
-  <input id="phone" placeholder="Phone number">
+  <input id="name" placeholder="Full name"/>
+  <input id="phone" placeholder="Phone number"/>
   <textarea id="address" placeholder="Delivery address"></textarea>
 
   <h2>Order Summary</h2>
@@ -41,6 +41,7 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
   <button class="btn" id="confirmOrder">Confirm Order</button>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -54,13 +55,11 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+
 const el = id => document.getElementById(id);
+let CART = [], TOTAL = 0, submitting = false;
 
-let CART = [];
-let TOTAL = 0;
-let submitting = false;
-
-// Ensure user is signed in
+// Ensure authentication (anonymous if needed)
 auth.onAuthStateChanged(async user => {
   if (!user) {
     await auth.signInAnonymously();
@@ -69,39 +68,48 @@ auth.onAuthStateChanged(async user => {
   loadCart(user.uid);
 });
 
-// Load cart
+// Load cart items
 async function loadCart(uid){
-  const snap = await db.collection("cart").where("userId","==",uid).get();
-  CART = [];
-  TOTAL = 0;
-  el("items").innerHTML = "";
+  try {
+    const snap = await db.collection("cart").where("userId","==",uid).get();
+    CART = [];
+    TOTAL = 0;
+    el("items").innerHTML = "";
 
-  if (snap.empty) {
-    el("items").innerHTML = "<p>Your cart is empty</p>";
-    el("total").innerText = "₦0";
-    return;
+    if (snap.empty) {
+      el("items").innerHTML = "<p>Your cart is empty</p>";
+      el("total").innerText = "₦0";
+      return;
+    }
+
+    snap.forEach(doc => {
+      const p = doc.data();
+      const qty = p.qty || p.quantity || 1;
+      CART.push({...p,id:doc.id, qty});
+      TOTAL += Number(p.price) * qty;
+
+      el("items").innerHTML += `
+        <div class="order-item">
+          <span>${p.productName || p.name} × ${qty}</span>
+          <span>₦${Number(p.price).toLocaleString()}</span>
+        </div>`;
+    });
+
+    el("total").innerText = "₦" + TOTAL.toLocaleString();
+
+  } catch(err){
+    console.error("Error loading cart:", err);
+    el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
   }
-
-  snap.forEach(doc=>{
-    const p = doc.data();
-    const qty = p.qty || p.quantity || 1;
-    CART.push({ id: doc.id, ...p, qty });
-    TOTAL += Number(p.price) * qty;
-    el("items").innerHTML += `<div class="order-item">
-      <span>${p.productName || p.name} × ${qty}</span>
-      <span>₦${Number(p.price).toLocaleString()}</span>
-    </div>`;
-  });
-
-  el("total").innerText = "₦" + TOTAL.toLocaleString();
 }
 
-// Confirm order
+// Confirm Order
 el("confirmOrder").onclick = async () => {
   if (!auth.currentUser) {
-    alert("Please wait, signing you in…");
+    alert("Signing you in… please wait");
     return;
   }
+
   if (submitting) return;
   submitting = true;
 
@@ -109,17 +117,10 @@ el("confirmOrder").onclick = async () => {
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
 
-  if (!name || !phone || !address) {
-    submitting = false;
-    return alert("Fill all customer details");
-  }
-  if (!CART.length) {
-    submitting = false;
-    return alert("Your cart is empty");
-  }
+  if (!name || !phone || !address) { submitting = false; return alert("Fill all customer details"); }
+  if (!CART.length) { submitting = false; return alert("Your cart is empty"); }
 
   try {
-    // Place order
     const orderRef = await db.collection("orders").add({
       userId: auth.currentUser.uid,
       customer: { name, phone, address },
@@ -136,7 +137,7 @@ el("confirmOrder").onclick = async () => {
     alert("Order placed successfully!");
     location.href = "track-order.html?id=" + orderRef.id;
 
-  } catch (err) {
+  } catch(err) {
     console.error("ORDER ERROR:", err);
     alert("Failed to place order");
     submitting = false;
