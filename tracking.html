@@ -1,41 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Your Order | Blackwear</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Track Order | Blackwear</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+        fontFamily: { poppins: ["Poppins", "sans-serif"] },
+      },
+    },
+  };
+</script>
 <style>
-body{margin:0;padding:20px;background:#0b0b0b;color:#fff;font-family:system-ui}
-.card{max-width:600px;margin:auto;background:#141414;border-radius:16px;padding:20px}
-h1{color:#ff7f00;margin-bottom:20px;text-align:center}
-input{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
-button{padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer;margin-top:10px}
-.order-details{margin-top:20px;padding:12px;background:#1a1a1a;border-radius:12px}
-.order-item{display:flex;justify-content:space-between;margin:6px 0;font-size:14px}
-.total{font-weight:bold;font-size:16px;margin-top:10px;color:#ff7f00}
-.error{color:#ff4d4d;background:#330000;padding:10px;border-radius:10px;margin-top:10px;display:none}
+body { background: #0b0b0b; font-family: Poppins, sans-serif; color: white; }
 </style>
 </head>
-<body>
+<body class="min-h-screen">
 
-<div class="card">
-  <h1>Track Your Order</h1>
+<header class="p-5 bg-dark flex justify-between items-center shadow-lg">
+  <h1 class="text-2xl font-bold text-brand">Track Order</h1>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+</header>
 
-  <input type="text" id="orderIdInput" placeholder="Enter your Order ID">
-  <button id="trackBtn">Track Order</button>
-
-  <div id="error" class="error">Error loading order</div>
-
-  <div id="orderDetails" class="order-details" style="display:none">
-    <h2>Order Details</h2>
-    <div id="customerInfo"></div>
-    <div id="itemsList"></div>
-    <div class="total" id="totalAmount"></div>
-  </div>
-</div>
+<main class="p-5 max-w-4xl mx-auto space-y-6">
+  <div id="loading" class="text-center text-gray-400">Loading order...</div>
+  <div id="orderContainer" class="space-y-5 hidden"></div>
+  <div id="error" class="hidden text-center text-red-500">Order not found or invalid ID.</div>
+</main>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
@@ -45,76 +43,60 @@ firebase.initializeApp({
   projectId: "blackwear-14a31"
 });
 
-const auth = firebase.auth();
 const db = firebase.firestore();
+const queryParams = new URLSearchParams(window.location.search);
+const orderId = queryParams.get("id");
 
-const el = id => document.getElementById(id);
-const errorDiv = el("error");
-const detailsDiv = el("orderDetails");
-const customerDiv = el("customerInfo");
-const itemsDiv = el("itemsList");
-const totalDiv = el("totalAmount");
+const loading = document.getElementById("loading");
+const orderContainer = document.getElementById("orderContainer");
+const errorEl = document.getElementById("error");
 
-async function ensureAuth() {
-  if (!auth.currentUser) {
-    await auth.signInAnonymously();
-  }
-}
+if (!orderId) {
+  loading.classList.add("hidden");
+  errorEl.classList.remove("hidden");
+} else {
+  db.collection("orders").doc(orderId).get().then(docSnap => {
+    loading.classList.add("hidden");
 
-async function loadOrder(orderId){
-  errorDiv.style.display = "none";
-  detailsDiv.style.display = "none";
-  try {
-    await ensureAuth();
-
-    const docRef = db.collection("orders").doc(orderId);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) throw new Error("Order not found");
+    if (!docSnap.exists) {
+      errorEl.classList.remove("hidden");
+      return;
+    }
 
     const order = docSnap.data();
+    orderContainer.classList.remove("hidden");
 
-    // Customer info
-    const customer = order.customer || {};
-    customerDiv.innerHTML = `
-      <p><b>Name:</b> ${customer.name || "-"}</p>
-      <p><b>Phone:</b> ${customer.phone || "-"}</p>
-      <p><b>Address:</b> ${customer.address || "-"}</p>
+    let itemsHTML = "";
+    if (Array.isArray(order.items) && order.items.length) {
+      order.items.forEach(item => {
+        itemsHTML += `
+          <div class="flex justify-between border-b border-gray-700 py-2">
+            <span>${item.productName || item.name} × ${item.qty || 1}</span>
+            <span>₦${Number(item.price).toLocaleString()}</span>
+          </div>`;
+      });
+    }
+
+    orderContainer.innerHTML = `
+      <div class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
+        <h2 class="font-semibold text-brand mb-3">Order #${orderId.slice(0,8).toUpperCase()}</h2>
+        <div class="mb-3">
+          <p><strong>Name:</strong> ${order.customer?.name || "-"}</p>
+          <p><strong>Phone:</strong> ${order.customer?.phone || "-"}</p>
+          <p><strong>Address:</strong> ${order.customer?.address || "-"}</p>
+        </div>
+        <div class="mb-3">
+          <h3 class="font-semibold mb-2">Items</h3>
+          <div>${itemsHTML}</div>
+        </div>
+        <p class="font-semibold text-lg mt-3">Total: ₦${Number(order.total||0).toLocaleString()}</p>
+      </div>
     `;
-
-    // Items list
-    const items = order.items || [];
-    itemsDiv.innerHTML = "";
-    items.forEach(i => {
-      itemsDiv.innerHTML += `<div class="order-item">
-        <span>${i.productName || i.name} × ${i.qty || i.quantity || 1}</span>
-        <span>₦${Number(i.price).toLocaleString()}</span>
-      </div>`;
-    });
-
-    // Total
-    totalDiv.innerText = "Total: ₦" + (order.total || 0).toLocaleString();
-
-    detailsDiv.style.display = "block";
-  } catch(err) {
+  }).catch(err => {
     console.error("Error loading order:", err);
-    errorDiv.style.display = "block";
-  }
-}
-
-// Button click
-el("trackBtn").onclick = () => {
-  const id = el("orderIdInput").value.trim();
-  if (!id) return alert("Enter an Order ID");
-  loadOrder(id);
-};
-
-// Optional: prefill from URL
-const params = new URLSearchParams(window.location.search);
-const preId = params.get("id");
-if (preId) {
-  el("orderIdInput").value = preId;
-  loadOrder(preId);
+    loading.classList.add("hidden");
+    errorEl.classList.remove("hidden");
+  });
 }
 </script>
 
