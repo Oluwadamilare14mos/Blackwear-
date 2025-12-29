@@ -3,19 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Order — Blackwear</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Track Your Order | Blackwear</title>
 <style>
-  body { background:#0b0b0b; font-family:Poppins,sans-serif; color:#fff; min-height:100vh; margin:0; padding:20px; }
-  .card { max-width:700px; margin:auto; background:#141414; border-radius:16px; padding:20px; }
-  h1,h2,h3 { margin:0 0 10px; color:#ff7f00; }
-  .section { margin-bottom:20px; }
-  .item { display:flex; justify-content:space-between; margin-top:6px; }
-  .status { font-weight:bold; padding:4px 8px; border-radius:6px; }
-  .status.pending { background:#fbbf24; color:#000; }
-  .status.shipped { background:#3b82f6; color:#fff; }
-  .status.delivered { background:#16a34a; color:#fff; }
+body{margin:0;padding:20px;background:#0b0b0b;color:#fff;font-family:system-ui}
+.card{max-width:600px;margin:auto;background:#141414;border-radius:16px;padding:20px}
+h1{color:#ff7f00;margin-bottom:20px;text-align:center}
+input{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
+button{padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer;margin-top:10px}
+.order-details{margin-top:20px;padding:12px;background:#1a1a1a;border-radius:12px}
+.order-item{display:flex;justify-content:space-between;margin:6px 0;font-size:14px}
+.total{font-weight:bold;font-size:16px;margin-top:10px;color:#ff7f00}
+.error{color:#ff4d4d;background:#330000;padding:10px;border-radius:10px;margin-top:10px;display:none}
 </style>
 </head>
 <body>
@@ -23,111 +21,100 @@
 <div class="card">
   <h1>Track Your Order</h1>
 
-  <div id="loading" class="section text-gray-400">Loading order...</div>
-  <div id="error" class="section text-red-500 hidden">Order not found or cannot be accessed.</div>
+  <input type="text" id="orderIdInput" placeholder="Enter your Order ID">
+  <button id="trackBtn">Track Order</button>
 
-  <div id="orderDetails" class="hidden">
-    <div class="section">
-      <h2>Order Info</h2>
-      <p><strong>Order ID:</strong> <span id="orderId"></span></p>
-      <p><strong>Status:</strong> <span id="orderStatus" class="status"></span></p>
-      <p><strong>Placed:</strong> <span id="orderDate"></span></p>
-    </div>
+  <div id="error" class="error">Error loading order</div>
 
-    <div class="section">
-      <h2>Customer Details</h2>
-      <p><strong>Name:</strong> <span id="customerName"></span></p>
-      <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
-      <p><strong>Address:</strong> <span id="customerAddress"></span></p>
-    </div>
-
-    <div class="section">
-      <h2>Items</h2>
-      <div id="itemsList"></div>
-      <p class="mt-2 font-bold">Total: ₦<span id="totalAmount"></span></p>
-    </div>
+  <div id="orderDetails" class="order-details" style="display:none">
+    <h2>Order Details</h2>
+    <div id="customerInfo"></div>
+    <div id="itemsList"></div>
+    <div class="total" id="totalAmount"></div>
   </div>
 </div>
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-const firebaseConfig = {
+<script>
+firebase.initializeApp({
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const el = id => document.getElementById(id);
+const errorDiv = el("error");
+const detailsDiv = el("orderDetails");
+const customerDiv = el("customerInfo");
+const itemsDiv = el("itemsList");
+const totalDiv = el("totalAmount");
+
+async function ensureAuth() {
+  if (!auth.currentUser) {
+    await auth.signInAnonymously();
+  }
+}
+
+async function loadOrder(orderId){
+  errorDiv.style.display = "none";
+  detailsDiv.style.display = "none";
+  try {
+    await ensureAuth();
+
+    const docRef = db.collection("orders").doc(orderId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) throw new Error("Order not found");
+
+    const order = docSnap.data();
+
+    // Customer info
+    const customer = order.customer || {};
+    customerDiv.innerHTML = `
+      <p><b>Name:</b> ${customer.name || "-"}</p>
+      <p><b>Phone:</b> ${customer.phone || "-"}</p>
+      <p><b>Address:</b> ${customer.address || "-"}</p>
+    `;
+
+    // Items list
+    const items = order.items || [];
+    itemsDiv.innerHTML = "";
+    items.forEach(i => {
+      itemsDiv.innerHTML += `<div class="order-item">
+        <span>${i.productName || i.name} × ${i.qty || i.quantity || 1}</span>
+        <span>₦${Number(i.price).toLocaleString()}</span>
+      </div>`;
+    });
+
+    // Total
+    totalDiv.innerText = "Total: ₦" + (order.total || 0).toLocaleString();
+
+    detailsDiv.style.display = "block";
+  } catch(err) {
+    console.error("Error loading order:", err);
+    errorDiv.style.display = "block";
+  }
+}
+
+// Button click
+el("trackBtn").onclick = () => {
+  const id = el("orderIdInput").value.trim();
+  if (!id) return alert("Enter an Order ID");
+  loadOrder(id);
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
+// Optional: prefill from URL
 const params = new URLSearchParams(window.location.search);
-const orderId = params.get("id");
-
-const loadingEl = document.getElementById("loading");
-const errorEl = document.getElementById("error");
-const orderDetailsEl = document.getElementById("orderDetails");
-
-if (!orderId) {
-  loadingEl.style.display = "none";
-  errorEl.textContent = "No order ID provided in URL.";
-  errorEl.classList.remove("hidden");
-} else {
-  async function loadOrder() {
-    try {
-      const orderRef = doc(db, "orders", orderId);
-      const orderSnap = await getDoc(orderRef);
-
-      if (!orderSnap.exists()) {
-        throw new Error("Order not found");
-      }
-
-      const order = orderSnap.data();
-
-      // Display order info
-      document.getElementById("orderId").textContent = orderId;
-      const statusEl = document.getElementById("orderStatus");
-      const status = order.orderStatus || "pending";
-      statusEl.textContent = status.replace(/_/g, " ");
-      statusEl.className = "status " + status;
-
-      const createdAt = order.createdAt?.toDate?.() || new Date();
-      document.getElementById("orderDate").textContent = createdAt.toLocaleString();
-
-      // Customer info
-      const c = order.customer || {};
-      document.getElementById("customerName").textContent = c.name || "-";
-      document.getElementById("customerPhone").textContent = c.phone || "-";
-      document.getElementById("customerAddress").textContent = c.address || "-";
-
-      // Items
-      const itemsList = document.getElementById("itemsList");
-      itemsList.innerHTML = "";
-      let total = 0;
-      (order.items || []).forEach(item => {
-        const qty = item.qty || item.quantity || 1;
-        const price = Number(item.price || 0);
-        total += price * qty;
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `<span>${item.productName || item.name} × ${qty}</span><span>₦${price.toLocaleString()}</span>`;
-        itemsList.appendChild(div);
-      });
-      document.getElementById("totalAmount").textContent = total.toLocaleString();
-
-      // Show order details
-      loadingEl.style.display = "none";
-      orderDetailsEl.classList.remove("hidden");
-    } catch (err) {
-      console.error("Error loading order:", err);
-      loadingEl.style.display = "none";
-      errorEl.classList.remove("hidden");
-    }
-  }
-
-  loadOrder();
+const preId = params.get("id");
+if (preId) {
+  el("orderIdInput").value = preId;
+  loadOrder(preId);
 }
 </script>
 
