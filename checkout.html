@@ -1,18 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Checkout | Blackwear</title>
 <style>
 body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.card{max-width:900px;margin:auto;background:#141414;border-radius:14px;padding:18px}
-h1,h2{margin:0 0 10px;color:#ff7f00}
+.card{max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px}
+h1,h2{margin:0 0 12px;color:#ff7f00}
 input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
-.btn{margin-top:14px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
+.btn{margin-top:18px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
 .order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
 .total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{background:#000;padding:10px;border-radius:10px;color:#ff7f00;margin-top:10px}
+.bank{background:#000;padding:12px;border-radius:10px;color:#ff7f00;margin-top:10px}
 </style>
 </head>
 <body>
@@ -20,13 +20,13 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 <div class="card">
   <h1>Checkout</h1>
 
-  <h2>Customer</h2>
-  <input id="name" placeholder="Full name">
-  <input id="phone" placeholder="Phone number">
+  <h2>Customer Details</h2>
+  <input id="name" placeholder="Full name"/>
+  <input id="phone" placeholder="Phone number"/>
   <textarea id="address" placeholder="Delivery address"></textarea>
 
   <h2>Order Summary</h2>
-  <div id="items"></div>
+  <div id="items">Loading cart…</div>
   <div class="total" id="total">₦0</div>
 
   <h2>Payment</h2>
@@ -35,8 +35,7 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
     Account Name: Olaniyi Funke<br>
     Bank: Opay<br>
     Account Number: 8117854139<br><br>
-    After payment, click <b>Confirm Order</b>.<br>
-    Send proof to support if requested.
+    After payment, click <b>Confirm Order</b>.
   </div>
 
   <button class="btn" id="confirmOrder">Confirm Order</button>
@@ -47,9 +46,6 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
 <script>
 firebase.initializeApp({
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -57,190 +53,96 @@ firebase.initializeApp({
   projectId: "blackwear-14a31"
 });
 
-emailjs.init("61XKawCOBMidGo2by");
-
 const auth = firebase.auth();
 const db = firebase.firestore();
+
 const el = id => document.getElementById(id);
+let CART = [], TOTAL = 0, submitting = false;
 
-let CART = [];
-let TOTAL = 0;
-let submitting = false;
-
-// Load cart on auth
+// Ensure authentication (anonymous if needed)
 auth.onAuthStateChanged(async user => {
-  if(!user) await auth.signInAnonymously();
-  loadCart();
+  if (!user) {
+    await auth.signInAnonymously();
+    return;
+  }
+  loadCart(user.uid);
 });
 
-async function loadCart(){
-  const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
-  CART = [];
-  TOTAL = 0;
-  el("items").innerHTML = "";
+// Load cart items
+async function loadCart(uid){
+  try {
+    const snap = await db.collection("cart").where("userId","==",uid).get();
+    CART = [];
+    TOTAL = 0;
+    el("items").innerHTML = "";
 
-  if(snap.empty){
-    el("items").innerHTML = "<p>Your cart is empty</p>";
-    el("total").textContent = "₦0";
+    if (snap.empty) {
+      el("items").innerHTML = "<p>Your cart is empty</p>";
+      el("total").innerText = "₦0";
+      return;
+    }
+
+    snap.forEach(doc => {
+      const p = doc.data();
+      const qty = p.qty || p.quantity || 1;
+      CART.push({...p,id:doc.id, qty});
+      TOTAL += Number(p.price) * qty;
+
+      el("items").innerHTML += `
+        <div class="order-item">
+          <span>${p.productName || p.name} × ${qty}</span>
+          <span>₦${Number(p.price).toLocaleString()}</span>
+        </div>`;
+    });
+
+    el("total").innerText = "₦" + TOTAL.toLocaleString();
+
+  } catch(err){
+    console.error("Error loading cart:", err);
+    el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
+  }
+}
+
+// Confirm Order
+el("confirmOrder").onclick = async () => {
+  if (!auth.currentUser) {
+    alert("Signing you in… please wait");
     return;
   }
 
-  snap.forEach(d=>{
-    const p = d.data();
-    CART.push({...p,id:d.id});
-    TOTAL += Number(p.price) * (p.quantity || 1);
-
-    el("items").innerHTML += `
-      <div class="order-item">
-        <span>${p.productName || p.name}</span>
-        <span>₦${Number(p.price).toLocaleString()}</span>
-      </div>
-    `;
-  });
-
-  el("total").textContent = "₦" + TOTAL.toLocaleString();
-}
-
-el("confirmOrder").onclick = async () => {
-  if(submitting) return;
+  if (submitting) return;
+  submitting = true;
 
   const name = el("name").value.trim();
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
 
-  if(!name || !phone || !address){
-    alert("Fill all customer details");
-    return;
-  }
-
-  if(!CART.length){
-    alert("Your cart is empty");
-    return;
-  }
-
-  submitting = true;
+  if (!name || !phone || !address) { submitting = false; return alert("Fill all customer details"); }
+  if (!CART.length) { submitting = false; return alert("Your cart is empty"); }
 
   try {
-    // Add order
     const orderRef = await db.collection("orders").add({
       userId: auth.currentUser.uid,
       customer: { name, phone, address },
       items: CART,
       total: TOTAL,
-      payment: {
-        method: "Opay Bank Transfer",
-        reference: "OPAY-" + Date.now(),
-        status: "awaiting_confirmation"
-      },
-      orderStatus: "pending_admin_approval",
-      deliveryStatus: "not_shipped",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    // Add orderId field
-    await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
 
     // Clear cart
     const batch = db.batch();
     CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
     await batch.commit();
 
-    // Send receipt email
-    emailjs.send("service_wu4fetn","template_pjd78fl",{
-      to_name: name,
-      order_id: orderRef.id,
-      order_total: "₦"+TOTAL.toLocaleString(),
-      payment_method: "Opay Bank Transfer",
-      payment_ref: "OPAY"
-    }).catch(()=>{});
-
     alert("Order placed successfully!");
-    location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
+    location.href = "track-order.html?id=" + orderRef.id;
 
   } catch(err) {
-    console.error(err);
-    alert("Failed to place order. Try again.");
+    console.error("ORDER ERROR:", err);
+    alert("Failed to place order");
     submitting = false;
   }
 };
-</script>
-
-</body>
-</html>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Your Order | Blackwear</title>
-<style>
-body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.container{max-width:900px;margin:auto;background:#141414;border-radius:14px;padding:20px}
-h1,h2,p{margin:0 0 10px;color:#ff7f00}
-input,button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:none}
-button{background:#ff7f00;color:#000;font-weight:bold;cursor:pointer}
-.error{background:red;padding:10px;margin-top:10px;border-radius:10px;color:#fff}
-</style>
-</head>
-<body>
-
-<div class="container">
-  <h1>Track Your Order</h1>
-  <p>Enter your Order ID to see the current status.</p>
-  <input id="orderIdInput" placeholder="Order ID">
-  <button id="trackBtn">Track Order</button>
-  <div id="orderResult"></div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-  authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
-});
-
-const db = firebase.firestore();
-const el = id => document.getElementById(id);
-
-async function loadOrder(orderId){
-  try {
-    const doc = await db.collection("orders").doc(orderId).get();
-    if(!doc.exists){
-      el("orderResult").innerHTML = '<div class="error">Order not found</div>';
-      return;
-    }
-
-    const data = doc.data();
-    el("orderResult").innerHTML = `
-      <h2>Order ID: ${doc.id}</h2>
-      <p><strong>Status:</strong> ${data.orderStatus}</p>
-      <p><strong>Delivery:</strong> ${data.deliveryStatus}</p>
-      <p><strong>Total:</strong> ₦${data.total.toLocaleString()}</p>
-      <p><strong>Payment Method:</strong> ${data.payment.method}</p>
-      <p><strong>Payment Status:</strong> ${data.payment.status}</p>
-      <h3>Items:</h3>
-      ${data.items.map(i=>`<p>${i.productName || i.name} - ₦${Number(i.price).toLocaleString()}</p>`).join('')}
-    `;
-  } catch(err){
-    console.error(err);
-    el("orderResult").innerHTML = '<div class="error">Error loading order</div>';
-  }
-}
-
-el("trackBtn").onclick = () => {
-  const id = el("orderIdInput").value.trim();
-  if(!id) return alert("Enter Order ID");
-  loadOrder(id);
-};
-
-// Auto-load if ID in URL
-const params = new URLSearchParams(window.location.search);
-const urlId = params.get("id");
-if(urlId) el("orderIdInput").value = urlId; loadOrder(urlId);
 </script>
 
 </body>
