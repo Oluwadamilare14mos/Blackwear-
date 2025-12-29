@@ -4,29 +4,45 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Checkout | Blackwear</title>
+
 <style>
 body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.card{max-width:900px;margin:auto;background:#141414;border-radius:14px;padding:18px}
-h1,h2{margin:0 0 10px;color:#ff7f00}
-input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
-.btn{margin-top:14px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
+.card{max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px}
+h1,h2{margin:0 0 12px;color:#ff7f00}
+input,textarea{
+  width:100%;padding:12px;margin-top:8px;
+  border-radius:10px;border:1px solid #333;
+  background:#000;color:#fff
+}
+.btn{
+  margin-top:18px;padding:14px;border:none;border-radius:14px;
+  background:#ff7f00;color:#000;font-weight:bold;
+  width:100%;cursor:pointer
+}
+.order-item{
+  display:flex;justify-content:space-between;
+  font-size:14px;margin-top:6px
+}
 .total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{background:#000;padding:10px;border-radius:10px;color:#ff7f00;margin-top:10px}
+.bank{
+  background:#000;padding:12px;border-radius:10px;
+  color:#ff7f00;margin-top:10px
+}
 </style>
 </head>
+
 <body>
 
 <div class="card">
   <h1>Checkout</h1>
 
-  <h2>Customer</h2>
+  <h2>Customer Details</h2>
   <input id="name" placeholder="Full name">
   <input id="phone" placeholder="Phone number">
   <textarea id="address" placeholder="Delivery address"></textarea>
 
   <h2>Order Summary</h2>
-  <div id="items">Loading cart...</div>
+  <div id="items">Loading cart…</div>
   <div class="total" id="total">₦0</div>
 
   <h2>Payment</h2>
@@ -35,8 +51,7 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
     Account Name: Olaniyi Funke<br>
     Bank: Opay<br>
     Account Number: 8117854139<br><br>
-    After payment, click <b>Confirm Order</b>.<br>
-    Send proof to support if requested.
+    After payment, click <b>Confirm Order</b>.
   </div>
 
   <button class="btn" id="confirmOrder">Confirm Order</button>
@@ -47,125 +62,116 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
 <script>
-try {
-  // Firebase initialization
-  firebase.initializeApp({
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
-  });
+firebase.initializeApp({
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+});
 
-  emailjs.init("61XKawCOBMidGo2by");
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const el = id => document.getElementById(id);
+const el = id => document.getElementById(id);
 
-  let CART = [];
-  let TOTAL = 0;
-  let submitting = false;
+let CART = [];
+let TOTAL = 0;
+let submitting = false;
 
-  // Ensure anonymous login
-  auth.onAuthStateChanged(async user => {
-    if (!user) await auth.signInAnonymously();
-    loadCart();
-  });
+/* ---------- AUTH ---------- */
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    await auth.signInAnonymously();
+    return;
+  }
+  loadCart(user.uid);
+});
 
-  // Load cart items
-  async function loadCart() {
-    try {
-      const snap = await db.collection("cart").where("userId","==",auth.currentUser.uid).get();
-      CART = [];
-      TOTAL = 0;
-      el("items").innerHTML = "";
+/* ---------- LOAD CART ---------- */
+async function loadCart(uid){
+  const snap = await db.collection("cart")
+    .where("userId","==",uid)
+    .get();
 
-      if (snap.empty) {
-        el("items").innerHTML = "<p>Your cart is empty</p>";
-        el("total").textContent = "₦0";
-        return;
-      }
+  CART = [];
+  TOTAL = 0;
+  el("items").innerHTML = "";
 
-      snap.forEach(doc => {
-        const p = doc.data();
-        CART.push({...p,id:doc.id});
-        TOTAL += Number(p.price) * (p.quantity || 1);
-        el("items").innerHTML += `
-          <div class="order-item">
-            <span>${p.productName || p.name}</span>
-            <span>₦${Number(p.price).toLocaleString()}</span>
-          </div>`;
-      });
-
-      el("total").textContent = "₦" + TOTAL.toLocaleString();
-    } catch(err) {
-      console.error("Error loading cart:", err);
-      el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
-    }
+  if (snap.empty) {
+    el("items").innerHTML = "<p>Your cart is empty</p>";
+    el("total").innerText = "₦0";
+    return;
   }
 
-  // Confirm Order click
-  el("confirmOrder").onclick = async () => {
-    if (submitting) return;
-    const name = el("name").value.trim();
-    const phone = el("phone").value.trim();
-    const address = el("address").value.trim();
+  snap.forEach(doc=>{
+    const p = doc.data();
+    const qty = p.qty || p.quantity || 1;
 
-    if (!name || !phone || !address) return alert("Fill all customer details");
-    if (!CART.length) return alert("Your cart is empty");
+    CART.push({ id: doc.id, ...p, qty });
+    TOTAL += Number(p.price) * qty;
 
-    submitting = true;
+    el("items").innerHTML += `
+      <div class="order-item">
+        <span>${p.productName || p.name} × ${qty}</span>
+        <span>₦${Number(p.price).toLocaleString()}</span>
+      </div>`;
+  });
 
-    try {
-      const orderRef = await db.collection("orders").add({
-        userId: auth.currentUser.uid,
-        customer: { name, phone, address },
-        items: CART,
-        total: TOTAL,
-        payment: {
-          method: "Opay Bank Transfer",
-          reference: "OPAY-" + Date.now(),
-          status: "awaiting_confirmation"
-        },
-        orderStatus: "pending_admin_approval",
-        deliveryStatus: "not_shipped",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Save orderId
-      await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
-
-      // Clear cart
-      const batch = db.batch();
-      CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
-      await batch.commit();
-
-      // Send receipt
-      emailjs.send("service_wu4fetn","template_pjd78fl",{
-        to_name: name,
-        order_id: orderRef.id,
-        order_total: "₦"+TOTAL.toLocaleString(),
-        payment_method: "Opay Bank Transfer",
-        payment_ref: "OPAY"
-      }).catch(()=>{});
-
-      alert("Order placed successfully!");
-      location.href = "track-order.html?id=" + orderRef.id + "&clearCart=1";
-
-    } catch(err) {
-      console.error("Error placing order:", err);
-      alert("Failed to place order. Try again.");
-      submitting = false;
-    }
-  };
-
-} catch(globalErr) {
-  console.error("Checkout page error:", globalErr);
-  document.body.innerHTML = "<p style='color:red;text-align:center;margin-top:50px;'>Error loading checkout. Please refresh.</p>";
+  el("total").innerText = "₦" + TOTAL.toLocaleString();
 }
+
+/* ---------- CONFIRM ORDER ---------- */
+el("confirmOrder").onclick = async ()=>{
+  if (submitting) return;
+
+  const user = auth.currentUser;
+  if (!user) return alert("Please wait…");
+
+  const name = el("name").value.trim();
+  const phone = el("phone").value.trim();
+  const address = el("address").value.trim();
+
+  if (!name || !phone || !address) return alert("Fill all details");
+  if (!CART.length) return alert("Cart is empty");
+
+  submitting = true;
+
+  try{
+    const ref = await db.collection("orders").add({
+      userId: user.uid,
+      customer: { name, phone, address },
+      items: CART,
+      total: TOTAL,
+      orderStatus: "pending",
+      deliveryStatus: "not_shipped",
+      payment: {
+        method: "Opay Bank Transfer",
+        status: "awaiting_confirmation",
+        ref: "OPAY-" + Date.now()
+      },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await db.collection("orders").doc(ref.id).update({
+      orderId: ref.id
+    });
+
+    const batch = db.batch();
+    CART.forEach(i=>{
+      batch.delete(db.collection("cart").doc(i.id));
+    });
+    await batch.commit();
+
+    alert("Order placed successfully!");
+    location.href = "track-order.html?id=" + ref.id;
+
+  }catch(err){
+    console.error(err);
+    alert("Failed to place order");
+    submitting = false;
+  }
+};
 </script>
+
 </body>
 </html>
