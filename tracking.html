@@ -3,41 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Order — Blackwear</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Track Order | Blackwear</title>
 <style>
-body { background: #0b0b0b; font-family: 'Poppins', sans-serif; color: #fff; }
-.card { max-width: 700px; margin: 40px auto; background: #141414; padding: 20px; border-radius: 14px; }
-h1 { color: #ff7f00; margin-bottom: 16px; }
-.order-item { display: flex; justify-content: space-between; margin-top: 8px; }
-.status { padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-.status.pending { background: #facc15; color: #000; }
-.status.processing { background: #3b82f6; }
-.status.shipped { background: #6366f1; }
-.status.delivered { background: #10b981; }
-.status.cancelled { background: #ef4444; }
+body {margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui;}
+.card {max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px;}
+h1,h2 {margin:0 0 12px;color:#ff7f00;}
+.order-item {display:flex;justify-content:space-between;font-size:14px;margin-top:6px;}
+.total {font-size:18px;font-weight:bold;margin-top:10px;}
+.payment, .status, .customer {background:#000;padding:12px;border-radius:10px;margin-top:10px;}
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>Track Your Order</h1>
-
-  <div id="loading" class="text-gray-400">Loading order...</div>
-  <div id="error" class="text-red-500 hidden">Error loading order. Please check your ID.</div>
+  <h1>Order Details</h1>
+  <div id="loading">Loading order…</div>
 
   <div id="orderDetails" class="hidden">
-    <p><strong>Order ID:</strong> <span id="orderId"></span></p>
-    <p><strong>Customer:</strong> <span id="customerName"></span></p>
-    <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
-    <p><strong>Address:</strong> <span id="customerAddress"></span></p>
-    <p><strong>Status:</strong> <span id="orderStatus" class="status"></span></p>
+    <h2>Customer Details</h2>
+    <div class="customer" id="customer"></div>
 
-    <h2 class="mt-4 mb-2 text-orange-400">Items</h2>
-    <div id="itemsList"></div>
+    <h2>Items</h2>
+    <div id="items"></div>
+    <div class="total" id="total"></div>
 
-    <p class="mt-4 font-bold">Total: ₦<span id="orderTotal"></span></p>
+    <h2>Payment</h2>
+    <div class="payment" id="payment"></div>
+
+    <h2>Status</h2>
+    <div class="status" id="status"></div>
   </div>
 </div>
 
@@ -45,7 +39,6 @@ h1 { color: #ff7f00; margin-bottom: 16px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
-// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -53,75 +46,68 @@ firebase.initializeApp({
 });
 
 const db = firebase.firestore();
+const el = id => document.getElementById(id);
 
-// Helper to get URL param
-function getQueryParam(param) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(param);
-}
+// Get order ID from URL
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get("id");
 
-// Status badge
-function getStatusClass(status) {
-  switch(status) {
-    case "pending": return "status pending";
-    case "processing": return "status processing";
-    case "shipped": return "status shipped";
-    case "delivered": return "status delivered";
-    case "cancelled": return "status cancelled";
-    default: return "status pending";
-  }
-}
+if (!orderId) {
+  el("loading").innerText = "No order ID provided.";
+} else {
+  db.collection("orders").doc(orderId).get()
+    .then(doc => {
+      if (!doc.exists) {
+        el("loading").innerText = "Order not found.";
+        return;
+      }
 
-async function loadOrder() {
-  const id = getQueryParam("id");
-  if (!id) {
-    document.getElementById("loading").classList.add("hidden");
-    document.getElementById("error").classList.remove("hidden");
-    return;
-  }
+      const o = doc.data();
+      el("loading").style.display = "none";
+      const details = el("orderDetails");
+      details.classList.remove("hidden");
 
-  try {
-    const docRef = db.collection("orders").doc(id);
-    const docSnap = await docRef.get();
+      // Customer
+      const c = o.customer || {};
+      el("customer").innerHTML = `
+        Name: ${c.name || ""}<br>
+        Phone: ${c.phone || ""}<br>
+        Address: ${c.address || ""}
+      `;
 
-    document.getElementById("loading").classList.add("hidden");
-
-    if (!docSnap.exists) {
-      document.getElementById("error").classList.remove("hidden");
-      return;
-    }
-
-    const order = docSnap.data();
-    document.getElementById("orderDetails").classList.remove("hidden");
-    document.getElementById("orderId").innerText = docSnap.id;
-    document.getElementById("customerName").innerText = order.customer?.name || "—";
-    document.getElementById("customerPhone").innerText = order.customer?.phone || "—";
-    document.getElementById("customerAddress").innerText = order.customer?.address || "—";
-    document.getElementById("orderStatus").innerText = order.orderStatus || "pending";
-    document.getElementById("orderStatus").className = getStatusClass(order.orderStatus || "pending");
-
-    const itemsList = document.getElementById("itemsList");
-    itemsList.innerHTML = "";
-    if (Array.isArray(order.items)) {
-      order.items.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "order-item";
-        div.innerHTML = `<span>${item.productName || item.name} × ${item.qty || item.quantity || 1}</span>
-                         <span>₦${Number(item.price).toLocaleString()}</span>`;
-        itemsList.appendChild(div);
+      // Items
+      const itemsEl = el("items");
+      itemsEl.innerHTML = "";
+      (o.items || []).forEach(item => {
+        itemsEl.innerHTML += `
+          <div class="order-item">
+            <span>${item.productName || item.name} × ${item.qty || item.quantity || 1}</span>
+            <span>₦${Number(item.price).toLocaleString()}</span>
+          </div>
+        `;
       });
-    }
+      el("total").innerText = "Total: ₦" + (o.total || 0).toLocaleString();
 
-    document.getElementById("orderTotal").innerText = Number(order.total || 0).toLocaleString();
+      // Payment
+      const p = o.payment || {};
+      el("payment").innerHTML = `
+        Method: ${p.method || "-"}<br>
+        Reference: ${p.reference || "-"}<br>
+        Status: ${p.status || "-"}
+      `;
 
-  } catch(e) {
-    console.error("Error loading order:", e);
-    document.getElementById("loading").classList.add("hidden");
-    document.getElementById("error").classList.remove("hidden");
-  }
+      // Status
+      el("status").innerHTML = `
+        Order Status: ${o.orderStatus || "-"}<br>
+        Delivery Status: ${o.deliveryStatus || "-"}<br>
+        Created At: ${o.createdAt?.toDate().toLocaleString() || "-"}
+      `;
+    })
+    .catch(err => {
+      console.error("Tracking error:", err);
+      el("loading").innerText = "Error loading order. Try again later.";
+    });
 }
-
-loadOrder();
 </script>
 
 </body>
