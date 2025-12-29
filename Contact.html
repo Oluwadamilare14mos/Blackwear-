@@ -1,63 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contact Us | Blackwear</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
 <style>
-body { background:#0b0b0b; font-family:Poppins,sans-serif; }
+body { font-family: Poppins, sans-serif; background:#0b0b0b; }
 </style>
 </head>
 
-<body class="min-h-screen text-white">
+<body class="text-white min-h-screen">
 
 <header class="p-5 bg-black flex justify-between items-center">
-  <h1 class="text-2xl font-bold text-orange-500">Contact Us</h1>
-  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+  <h1 class="text-xl font-bold text-orange-500">Contact Us</h1>
+  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded">Back</a>
 </header>
 
 <main class="p-6 max-w-xl mx-auto">
 
-  <form id="contactForm" class="bg-[#111] p-6 rounded-xl space-y-4 border border-gray-700">
+<form id="contactForm" class="bg-[#111] p-6 rounded-xl space-y-4 border border-gray-700">
 
-    <input id="name" placeholder="Full Name" required
-      class="w-full bg-black border border-gray-700 p-3 rounded-lg text-white"/>
+  <input id="name" required placeholder="Full Name"
+    class="w-full p-3 bg-black border border-gray-700 rounded"/>
 
-    <input id="email" type="email" placeholder="Email Address" required
-      class="w-full bg-black border border-gray-700 p-3 rounded-lg text-white"/>
+  <input id="email" type="email" required placeholder="Email Address"
+    class="w-full p-3 bg-black border border-gray-700 rounded"/>
 
-    <select id="subject"
-      class="w-full bg-black border border-gray-700 p-3 rounded-lg text-white">
-      <option>General Inquiry</option>
-      <option>Order Issue</option>
-      <option>Payment Problem</option>
-      <option>Delivery / Tracking</option>
-      <option>Suggestion / Feedback</option>
-    </select>
+  <select id="subject"
+    class="w-full p-3 bg-black border border-gray-700 rounded">
+    <option>General Inquiry</option>
+    <option>Order Issue</option>
+    <option>Payment Problem</option>
+    <option>Delivery / Tracking</option>
+    <option>Feedback</option>
+  </select>
 
-    <textarea id="message" rows="4" placeholder="Your message..." required
-      class="w-full bg-black border border-gray-700 p-3 rounded-lg text-white"></textarea>
+  <textarea id="message" required rows="4" placeholder="Your message..."
+    class="w-full p-3 bg-black border border-gray-700 rounded"></textarea>
 
-    <button
-      class="w-full bg-orange-500 text-black font-bold py-3 rounded-lg">
-      Send Message
-    </button>
+  <button class="w-full bg-orange-500 text-black font-bold py-3 rounded">
+    Send Message
+  </button>
 
-    <p id="status" class="text-center text-sm hidden"></p>
-
-  </form>
+  <p id="status" class="text-center text-sm hidden"></p>
+</form>
 
 </main>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -67,26 +63,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
-
-let userId = null;
-onAuthStateChanged(auth, user => {
-  if (user) userId = user.uid;
-});
 
 const form = document.getElementById("contactForm");
 const status = document.getElementById("status");
 
-form.addEventListener("submit", async e => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   status.classList.remove("hidden");
   status.textContent = "Sending...";
-  status.className = "text-center text-sm text-gray-400";
+  status.className = "text-center text-gray-400";
 
   try {
     await addDoc(collection(db, "contact"), {
-      userId: userId || null,
       name: name.value.trim(),
       email: email.value.trim(),
       subject: subject.value,
@@ -96,12 +85,12 @@ form.addEventListener("submit", async e => {
 
     form.reset();
     status.textContent = "✅ Message sent successfully!";
-    status.className = "text-center text-sm text-green-400";
+    status.className = "text-center text-green-400";
 
   } catch (err) {
     console.error(err);
-    status.textContent = "❌ Failed to send message.";
-    status.className = "text-center text-sm text-red-400";
+    status.textContent = "❌ Failed to send message";
+    status.className = "text-center text-red-400";
   }
 });
 </script>
