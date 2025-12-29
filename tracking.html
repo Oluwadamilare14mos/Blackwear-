@@ -1,42 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Track Order | Blackwear</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order — Blackwear</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: { brand: "#ff7f00", dark: "#0b0b0b" },
-        fontFamily: { poppins: ["Poppins", "sans-serif"] },
-      },
-    },
-  };
-</script>
 <style>
-body { background: #0b0b0b; font-family: Poppins, sans-serif; color: white; }
+body { background: #0b0b0b; font-family: 'Poppins', sans-serif; color: #fff; }
+.card { max-width: 700px; margin: 40px auto; background: #141414; padding: 20px; border-radius: 14px; }
+h1 { color: #ff7f00; margin-bottom: 16px; }
+.order-item { display: flex; justify-content: space-between; margin-top: 8px; }
+.status { padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+.status.pending { background: #facc15; color: #000; }
+.status.processing { background: #3b82f6; }
+.status.shipped { background: #6366f1; }
+.status.delivered { background: #10b981; }
+.status.cancelled { background: #ef4444; }
 </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-<header class="p-5 bg-dark flex justify-between items-center shadow-lg">
-  <h1 class="text-2xl font-bold text-brand">Track Order</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
-</header>
+<div class="card">
+  <h1>Track Your Order</h1>
 
-<main class="p-5 max-w-4xl mx-auto space-y-6">
-  <div id="loading" class="text-center text-gray-400">Loading order...</div>
-  <div id="orderContainer" class="space-y-5 hidden"></div>
-  <div id="error" class="hidden text-center text-red-500">Order not found or invalid ID.</div>
-</main>
+  <div id="loading" class="text-gray-400">Loading order...</div>
+  <div id="error" class="text-red-500 hidden">Error loading order. Please check your ID.</div>
+
+  <div id="orderDetails" class="hidden">
+    <p><strong>Order ID:</strong> <span id="orderId"></span></p>
+    <p><strong>Customer:</strong> <span id="customerName"></span></p>
+    <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
+    <p><strong>Address:</strong> <span id="customerAddress"></span></p>
+    <p><strong>Status:</strong> <span id="orderStatus" class="status"></span></p>
+
+    <h2 class="mt-4 mb-2 text-orange-400">Items</h2>
+    <div id="itemsList"></div>
+
+    <p class="mt-4 font-bold">Total: ₦<span id="orderTotal"></span></p>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
+// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -44,60 +53,75 @@ firebase.initializeApp({
 });
 
 const db = firebase.firestore();
-const queryParams = new URLSearchParams(window.location.search);
-const orderId = queryParams.get("id");
 
-const loading = document.getElementById("loading");
-const orderContainer = document.getElementById("orderContainer");
-const errorEl = document.getElementById("error");
+// Helper to get URL param
+function getQueryParam(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
 
-if (!orderId) {
-  loading.classList.add("hidden");
-  errorEl.classList.remove("hidden");
-} else {
-  db.collection("orders").doc(orderId).get().then(docSnap => {
-    loading.classList.add("hidden");
+// Status badge
+function getStatusClass(status) {
+  switch(status) {
+    case "pending": return "status pending";
+    case "processing": return "status processing";
+    case "shipped": return "status shipped";
+    case "delivered": return "status delivered";
+    case "cancelled": return "status cancelled";
+    default: return "status pending";
+  }
+}
+
+async function loadOrder() {
+  const id = getQueryParam("id");
+  if (!id) {
+    document.getElementById("loading").classList.add("hidden");
+    document.getElementById("error").classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const docRef = db.collection("orders").doc(id);
+    const docSnap = await docRef.get();
+
+    document.getElementById("loading").classList.add("hidden");
 
     if (!docSnap.exists) {
-      errorEl.classList.remove("hidden");
+      document.getElementById("error").classList.remove("hidden");
       return;
     }
 
     const order = docSnap.data();
-    orderContainer.classList.remove("hidden");
+    document.getElementById("orderDetails").classList.remove("hidden");
+    document.getElementById("orderId").innerText = docSnap.id;
+    document.getElementById("customerName").innerText = order.customer?.name || "—";
+    document.getElementById("customerPhone").innerText = order.customer?.phone || "—";
+    document.getElementById("customerAddress").innerText = order.customer?.address || "—";
+    document.getElementById("orderStatus").innerText = order.orderStatus || "pending";
+    document.getElementById("orderStatus").className = getStatusClass(order.orderStatus || "pending");
 
-    let itemsHTML = "";
-    if (Array.isArray(order.items) && order.items.length) {
+    const itemsList = document.getElementById("itemsList");
+    itemsList.innerHTML = "";
+    if (Array.isArray(order.items)) {
       order.items.forEach(item => {
-        itemsHTML += `
-          <div class="flex justify-between border-b border-gray-700 py-2">
-            <span>${item.productName || item.name} × ${item.qty || 1}</span>
-            <span>₦${Number(item.price).toLocaleString()}</span>
-          </div>`;
+        const div = document.createElement("div");
+        div.className = "order-item";
+        div.innerHTML = `<span>${item.productName || item.name} × ${item.qty || item.quantity || 1}</span>
+                         <span>₦${Number(item.price).toLocaleString()}</span>`;
+        itemsList.appendChild(div);
       });
     }
 
-    orderContainer.innerHTML = `
-      <div class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg">
-        <h2 class="font-semibold text-brand mb-3">Order #${orderId.slice(0,8).toUpperCase()}</h2>
-        <div class="mb-3">
-          <p><strong>Name:</strong> ${order.customer?.name || "-"}</p>
-          <p><strong>Phone:</strong> ${order.customer?.phone || "-"}</p>
-          <p><strong>Address:</strong> ${order.customer?.address || "-"}</p>
-        </div>
-        <div class="mb-3">
-          <h3 class="font-semibold mb-2">Items</h3>
-          <div>${itemsHTML}</div>
-        </div>
-        <p class="font-semibold text-lg mt-3">Total: ₦${Number(order.total||0).toLocaleString()}</p>
-      </div>
-    `;
-  }).catch(err => {
-    console.error("Error loading order:", err);
-    loading.classList.add("hidden");
-    errorEl.classList.remove("hidden");
-  });
+    document.getElementById("orderTotal").innerText = Number(order.total || 0).toLocaleString();
+
+  } catch(e) {
+    console.error("Error loading order:", e);
+    document.getElementById("loading").classList.add("hidden");
+    document.getElementById("error").classList.remove("hidden");
+  }
 }
+
+loadOrder();
 </script>
 
 </body>
