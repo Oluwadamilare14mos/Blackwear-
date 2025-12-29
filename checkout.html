@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout | Blackwear</title>
 <style>
-body{margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui}
-.card{max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px}
-h1,h2{margin:0 0 12px;color:#ff7f00}
-input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff}
-.btn{margin-top:18px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer}
-.order-item{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
-.total{font-size:18px;font-weight:bold;margin-top:10px}
-.bank{background:#000;padding:12px;border-radius:10px;color:#ff7f00;margin-top:10px}
+body {margin:0;padding:20px;background:#0f0f0f;color:#fff;font-family:system-ui;}
+.card {max-width:900px;margin:auto;background:#141414;border-radius:16px;padding:20px;}
+h1,h2 {margin:0 0 12px;color:#ff7f00;}
+input,textarea {width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #333;background:#000;color:#fff;}
+.btn {margin-top:18px;padding:14px;border:none;border-radius:14px;background:#ff7f00;color:#000;font-weight:bold;width:100%;cursor:pointer;}
+.order-item {display:flex;justify-content:space-between;font-size:14px;margin-top:6px;}
+.total {font-size:18px;font-weight:bold;margin-top:10px;}
+.bank {background:#000;padding:12px;border-radius:10px;color:#ff7f00;margin-top:10px;}
 </style>
 </head>
 <body>
@@ -21,8 +21,8 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
   <h1>Checkout</h1>
 
   <h2>Customer Details</h2>
-  <input id="name" placeholder="Full name"/>
-  <input id="phone" placeholder="Phone number"/>
+  <input id="name" placeholder="Full name">
+  <input id="phone" placeholder="Phone number">
   <textarea id="address" placeholder="Delivery address"></textarea>
 
   <h2>Order Summary</h2>
@@ -41,7 +41,6 @@ input,textarea{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:
   <button class="btn" id="confirmOrder">Confirm Order</button>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -55,68 +54,51 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 const el = id => document.getElementById(id);
-let CART = [], TOTAL = 0, submitting = false;
 
-// Ensure authentication (anonymous if needed)
+let CART = [];
+let TOTAL = 0;
+let submitting = false;
+
+// Auth
 auth.onAuthStateChanged(async user => {
-  if (!user) {
-    await auth.signInAnonymously();
-    return;
-  }
-  loadCart(user.uid);
+  if (!user) await auth.signInAnonymously();
+  else loadCart(user.uid);
 });
 
-// Load cart items
-async function loadCart(uid){
-  try {
-    const snap = await db.collection("cart").where("userId","==",uid).get();
-    CART = [];
-    TOTAL = 0;
-    el("items").innerHTML = "";
+// Load cart
+async function loadCart(uid) {
+  const snap = await db.collection("cart").where("userId", "==", uid).get();
+  CART = [];
+  TOTAL = 0;
+  el("items").innerHTML = "";
 
-    if (snap.empty) {
-      el("items").innerHTML = "<p>Your cart is empty</p>";
-      el("total").innerText = "₦0";
-      return;
-    }
-
-    snap.forEach(doc => {
-      const p = doc.data();
-      const qty = p.qty || p.quantity || 1;
-      CART.push({...p,id:doc.id, qty});
-      TOTAL += Number(p.price) * qty;
-
-      el("items").innerHTML += `
-        <div class="order-item">
-          <span>${p.productName || p.name} × ${qty}</span>
-          <span>₦${Number(p.price).toLocaleString()}</span>
-        </div>`;
-    });
-
-    el("total").innerText = "₦" + TOTAL.toLocaleString();
-
-  } catch(err){
-    console.error("Error loading cart:", err);
-    el("items").innerHTML = "<p>Error loading cart. Try again later.</p>";
+  if (snap.empty) {
+    el("items").innerHTML = "<p>Your cart is empty</p>";
+    el("total").innerText = "₦0";
+    return;
   }
+
+  snap.forEach(doc => {
+    const p = doc.data();
+    const qty = p.qty || p.quantity || 1;
+    CART.push({ id: doc.id, ...p, qty });
+    TOTAL += Number(p.price) * qty;
+    el("items").innerHTML += `<div class="order-item"><span>${p.productName || p.name} × ${qty}</span><span>₦${Number(p.price).toLocaleString()}</span></div>`;
+  });
+
+  el("total").innerText = "₦" + TOTAL.toLocaleString();
 }
 
 // Confirm Order
 el("confirmOrder").onclick = async () => {
-  if (!auth.currentUser) {
-    alert("Signing you in… please wait");
-    return;
-  }
-
+  if (!auth.currentUser) return alert("Signing you in, please wait…");
   if (submitting) return;
   submitting = true;
 
   const name = el("name").value.trim();
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
-
   if (!name || !phone || !address) { submitting = false; return alert("Fill all customer details"); }
   if (!CART.length) { submitting = false; return alert("Your cart is empty"); }
 
@@ -124,10 +106,19 @@ el("confirmOrder").onclick = async () => {
     const orderRef = await db.collection("orders").add({
       userId: auth.currentUser.uid,
       customer: { name, phone, address },
-      items: CART,
+      items: CART.map(i => ({ ...i })), // include qty, price, image, productId, productName
       total: TOTAL,
+      payment: {
+        method: "Opay Bank Transfer",
+        reference: "OPAY-" + Date.now(),
+        status: "awaiting_confirmation"
+      },
+      orderStatus: "pending_admin_approval",
+      deliveryStatus: "not_shipped",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
+    await db.collection("orders").doc(orderRef.id).update({ orderId: orderRef.id });
 
     // Clear cart
     const batch = db.batch();
@@ -137,7 +128,7 @@ el("confirmOrder").onclick = async () => {
     alert("Order placed successfully!");
     location.href = "track-order.html?id=" + orderRef.id;
 
-  } catch(err) {
+  } catch (err) {
     console.error("ORDER ERROR:", err);
     alert("Failed to place order");
     submitting = false;
