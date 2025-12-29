@@ -121,52 +121,47 @@ async function loadCart(uid){
 }
 
 /* ---------- CONFIRM ORDER ---------- */
-el("confirmOrder").onclick = async ()=>{
-  if (submitting) return;
+el("confirmOrder").onclick = async () => {
+  if (!auth.currentUser) {
+    alert("Please wait, signing you in…");
+    return;
+  }
 
-  const user = auth.currentUser;
-  if (!user) return alert("Please wait…");
+  if (submitting) return;
+  submitting = true;
 
   const name = el("name").value.trim();
   const phone = el("phone").value.trim();
   const address = el("address").value.trim();
 
-  if (!name || !phone || !address) return alert("Fill all details");
-  if (!CART.length) return alert("Cart is empty");
+  if (!name || !phone || !address) {
+    submitting = false;
+    return alert("Fill all customer details");
+  }
 
-  submitting = true;
+  if (!CART.length) {
+    submitting = false;
+    return alert("Your cart is empty");
+  }
 
-  try{
-    const ref = await db.collection("orders").add({
-      userId: user.uid,
+  try {
+    const orderRef = await db.collection("orders").add({
+      userId: auth.currentUser.uid,
       customer: { name, phone, address },
       items: CART,
       total: TOTAL,
-      orderStatus: "pending",
-      deliveryStatus: "not_shipped",
-      payment: {
-        method: "Opay Bank Transfer",
-        status: "awaiting_confirmation",
-        ref: "OPAY-" + Date.now()
-      },
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    await db.collection("orders").doc(ref.id).update({
-      orderId: ref.id
-    });
-
     const batch = db.batch();
-    CART.forEach(i=>{
-      batch.delete(db.collection("cart").doc(i.id));
-    });
+    CART.forEach(i => batch.delete(db.collection("cart").doc(i.id)));
     await batch.commit();
 
     alert("Order placed successfully!");
-    location.href = "track-order.html?id=" + ref.id;
+    location.href = "track-order.html?id=" + orderRef.id;
 
-  }catch(err){
-    console.error(err);
+  } catch (err) {
+    console.error("ORDER ERROR:", err);
     alert("Failed to place order");
     submitting = false;
   }
