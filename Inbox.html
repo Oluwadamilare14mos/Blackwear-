@@ -53,10 +53,12 @@
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import {
   getFirestore,
   collection,
   query,
+  where,
   orderBy,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -71,56 +73,77 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
-// 🔥 READ FROM "contacts" (same as contact form)
-const q = query(
-  collection(db, "contacts"),
-  orderBy("createdAt", "desc")
-);
-
-onSnapshot(q, (snapshot) => {
-  messagesList.innerHTML = "";
-
-  if (snapshot.empty) {
-    emptyState.classList.remove("hidden");
-    messagesList.classList.add("hidden");
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    emptyState.textContent = "Please log in to view messages.";
     return;
   }
 
-  emptyState.classList.add("hidden");
-  messagesList.classList.remove("hidden");
+  const q = query(
+    collection(db, "supportMessages"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
 
-  snapshot.forEach((doc) => {
-    const msg = doc.data();
+  onSnapshot(q, (snapshot) => {
+    messagesList.innerHTML = "";
 
-    const card = document.createElement("div");
-    card.className =
-      "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+    if (snapshot.empty) {
+      emptyState.classList.remove("hidden");
+      messagesList.classList.add("hidden");
+      return;
+    }
 
-    card.innerHTML = `
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="font-semibold text-brand">
-          ${msg.name || "Anonymous"}
-        </h3>
-        <span class="text-xs text-gray-400">
-          ${msg.createdAt?.toDate
-            ? msg.createdAt.toDate().toLocaleString()
-            : ""}
-        </span>
-      </div>
+    emptyState.classList.add("hidden");
+    messagesList.classList.remove("hidden");
 
-      <p class="text-gray-300">${msg.message || ""}</p>
+    snapshot.forEach((doc) => {
+      const msg = doc.data();
 
-      <p class="text-xs text-gray-500 mt-2">
-        ${msg.email || ""} • ${msg.subject || ""}
-      </p>
-    `;
+      const card = document.createElement("div");
+      card.className =
+        "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
 
-    messagesList.appendChild(card);
+      let repliesHTML = "";
+      if (Array.isArray(msg.replies)) {
+        repliesHTML = msg.replies
+          .map(r => `
+            <div class="bg-reply p-3 rounded-lg text-gray-200 text-sm">
+              💬 ${r}
+            </div>
+          `)
+          .join("");
+      }
+
+      card.innerHTML = `
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-semibold text-brand">
+            ${msg.subject || "Support Message"}
+          </h3>
+          <span class="text-xs text-gray-400">
+            ${msg.createdAt?.toDate
+              ? msg.createdAt.toDate().toLocaleString()
+              : ""}
+          </span>
+        </div>
+
+        <p class="text-gray-300">${msg.message || ""}</p>
+
+        <p class="text-xs text-gray-500 mt-1">
+          ${msg.email || ""}
+        </p>
+
+        ${repliesHTML ? `<div class="mt-3 space-y-2">${repliesHTML}</div>` : ""}
+      `;
+
+      messagesList.appendChild(card);
+    });
   });
 });
 </script>
