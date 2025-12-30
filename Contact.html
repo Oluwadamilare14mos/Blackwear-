@@ -1,145 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Us — Blackwear</title>
 
-<!DOCTYPE html>  <html lang="en">  
-<head>  
-  <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
-  <title>Contact Us — Blackwear</title>    <!-- Fonts & Tailwind -->    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>  
-  <script src="https://cdn.tailwindcss.com"></script>    <script>  
-    tailwind.config = {  
-      theme: {  
-        extend: {  
-          colors: {  
-            brand: "#ff7f00",  
-            dark: "#0b0b0b",  
-          },  
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },  
-        },  
-      },  
-    };  
-  </script>    <style>  
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }  
-  </style>  </head>  <body class="min-h-screen text-white">    <!-- HEADER -->    <header class="p-5 bg-dark shadow-lg flex justify-between items-center">  
-    <h1 class="text-2xl font-bold text-brand">Contact Us</h1>  
-    <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">  
-      Back  
-    </a>  
-  </header>    <!-- CONTENT -->    <main class="p-5 max-w-3xl mx-auto space-y-8">  <!-- INTRO -->  
-<section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">  
-  <h2 class="text-xl font-semibold text-brand mb-2">We’d love to hear from you</h2>  
-  <p class="text-gray-400 text-sm">  
-    Have a question, issue, or feedback? Fill the form below and the Blackwear team  
-    will get back to you as soon as possible.  
-  </p>  
-</section>  
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- CONTACT FORM -->  
-<section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">  
-  <form id="contactForm" class="space-y-5">  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b",
+          },
+          fontFamily: {
+            poppins: ["Poppins", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
 
-    <div>  
-      <label class="block text-sm text-gray-300 mb-1">Full Name</label>  
-      <input type="text" id="name" required  
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-brand"/>  
-    </div>  
+  <style>
+    body {
+      background: #0b0b0b;
+      font-family: Poppins, sans-serif;
+    }
+  </style>
+</head>
 
-    <div>  
-      <label class="block text-sm text-gray-300 mb-1">Email Address</label>  
-      <input type="email" id="email" required  
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-brand"/>  
-    </div>  
+<body class="min-h-screen text-white">
 
-    <div>  
-      <label class="block text-sm text-gray-300 mb-1">Subject</label>  
-      <select id="subject"  
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-brand">  
-        <option>General Inquiry</option>  
-        <option>Order Issue</option>  
-        <option>Payment Problem</option>  
-        <option>Delivery / Tracking</option>  
-        <option>Suggestion / Feedback</option>  
-      </select>  
-    </div>  
+<!-- HEADER -->
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Contact Us</h1>
+  <a href="index.html"
+     class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">
+    Back
+  </a>
+</header>
 
-    <div>  
-      <label class="block text-sm text-gray-300 mb-1">Message</label>  
-      <textarea id="message" rows="5" required  
-        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-brand"></textarea>  
-    </div>  
+<!-- CONTENT -->
+<main class="p-5 max-w-3xl mx-auto space-y-8">
 
-    <button type="submit"  
-      class="w-full bg-brand text-black py-3 rounded-xl font-bold text-lg hover:bg-orange-500 transition">  
-      Send Message  
-    </button>  
+  <!-- INTRO -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-2">We’d love to hear from you</h2>
+    <p class="text-gray-400 text-sm">
+      Have a question, issue, or feedback? Fill the form below and the Blackwear team
+      will get back to you as soon as possible.
+    </p>
+  </section>
 
-    <p id="formStatus" class="text-center text-sm mt-2 hidden"></p>  
-  </form>  
-</section>  
+  <!-- CONTACT FORM -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <form id="contactForm" class="space-y-5">
 
-<!-- CONTACT INFO -->  
-<section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">  
-  <h2 class="text-xl font-semibold text-brand mb-3">Other ways to reach us</h2>  
+      <div>
+        <label class="block text-sm text-gray-300 mb-1">Full Name</label>
+        <input id="name" required
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white focus:border-brand outline-none"/>
+      </div>
 
-  <div class="space-y-3 text-sm text-gray-300">  
-    <p>📧 Email: <span class="text-white">support@blackwear.store</span></p>  
-    <p>📞 Phone: <span class="text-white">+234 800 000 0000</span></p>  
-    <p>📍 Location: <span class="text-white">Nigeria</span></p>  
-    <p>⏰ Support Hours: <span class="text-white">Mon – Sat, 9am – 6pm</span></p>  
-  </div>  
-</section>
+      <div>
+        <label class="block text-sm text-gray-300 mb-1">Email Address</label>
+        <input id="email" type="email" required
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white focus:border-brand outline-none"/>
+      </div>
 
-  </main>    <!-- FIREBASE -->    <script type="module">  
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";  
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";  
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";  
-  
-    const firebaseConfig = {  
-      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",  
-      authDomain: "blackwear-14a31.firebaseapp.com",  
-      projectId: "blackwear-14a31",  
-      storageBucket: "blackwear-14a31.firebasestorage.app",  
-      messagingSenderId: "222479690292",  
-      appId: "1:222479690292:web:82bd91e186da6412133861"  
-    };  
-  
-    const app = initializeApp(firebaseConfig);  
-    const auth = getAuth(app);  
-    const db = getFirestore(app);  
-  
-    const form = document.getElementById("contactForm");  
-    const statusEl = document.getElementById("formStatus");  
-  
-    let currentUserId = null;  
-  
-    onAuthStateChanged(auth, (user) => {  
-      if (user) currentUserId = user.uid;  
-    });  
-  
-    form.addEventListener("submit", async (e) => {  
-      e.preventDefault();  
-  
-      statusEl.classList.remove("hidden");  
-      statusEl.textContent = "Sending message...";  
-      statusEl.className = "text-center text-sm text-gray-400 mt-2";  
-  
-      try {  
-        await addDoc(collection(db, "contacts"), {  
-          userId: currentUserId || null,  
-          name: document.getElementById("name").value.trim(),  
-          email: document.getElementById("email").value.trim(),  
-          subject: document.getElementById("subject").value,  
-          message: document.getElementById("message").value.trim(),  
-          createdAt: serverTimestamp(),  
-        });  
-  
-        form.reset();  
-        statusEl.textContent = "✅ Message sent successfully. We’ll get back to you shortly.";  
-        statusEl.className = "text-center text-sm text-green-400 mt-2";  
-  
-      } catch (err) {  
-        console.error(err);  
-        statusEl.textContent = "❌ Failed to send message. Please try again.";  
-        statusEl.className = "text-center text-sm text-red-400 mt-2";  
-      }  
-    });  
-  </script>  </body>  
+      <div>
+        <label class="block text-sm text-gray-300 mb-1">Subject</label>
+        <select id="subject"
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white focus:border-brand outline-none">
+          <option>General Inquiry</option>
+          <option>Order Issue</option>
+          <option>Payment Problem</option>
+          <option>Delivery / Tracking</option>
+          <option>Suggestion / Feedback</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-300 mb-1">Message</label>
+        <textarea id="message" rows="5" required
+          class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-white focus:border-brand outline-none"></textarea>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-brand text-black py-3 rounded-xl font-bold text-lg hover:bg-orange-500 transition">
+        Send Message
+      </button>
+
+      <p id="formStatus" class="text-center text-sm mt-2 hidden"></p>
+    </form>
+  </section>
+
+  <!-- CONTACT INFO -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-3">Other ways to reach us</h2>
+    <div class="space-y-3 text-sm text-gray-300">
+      <p>📧 Email: <span class="text-white">support@blackwear.store</span></p>
+      <p>📞 Phone: <span class="text-white">+234 800 000 0000</span></p>
+      <p>📍 Location: <span class="text-white">Nigeria</span></p>
+      <p>⏰ Support Hours: <span class="text-white">Mon – Sat, 9am – 6pm</span></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const form = document.getElementById("contactForm");
+  const statusEl = document.getElementById("formStatus");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    statusEl.classList.remove("hidden");
+    statusEl.textContent = "Sending message...";
+    statusEl.className = "text-center text-sm text-gray-400 mt-2";
+
+    try {
+      await addDoc(collection(db, "contact"), {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        subject: document.getElementById("subject").value,
+        message: document.getElementById("message").value.trim(),
+        createdAt: serverTimestamp()
+      });
+
+      form.reset();
+      statusEl.textContent = "✅ Message sent successfully!";
+      statusEl.className = "text-center text-sm text-green-400 mt-2";
+
+    } catch (err) {
+      console.error("Contact error:", err);
+      statusEl.textContent = "❌ Failed to send message. Please try again.";
+      statusEl.className = "text-center text-sm text-red-400 mt-2";
+    }
+  });
+</script>
+
+</body>
 </html>
