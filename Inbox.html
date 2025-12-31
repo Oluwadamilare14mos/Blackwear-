@@ -1,79 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Inbox</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inbox — Blackwear</title>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<style>
-body {
-  background: #000;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  padding: 20px;
-}
-h1 {
-  color: orange;
-}
-.message {
-  background: #111;
-  border: 1px solid #333;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-}
-small {
-  color: #aaa;
-}
-</style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+  </style>
 </head>
 
-<body>
+<body class="min-h-screen text-white">
 
-<h1>Inbox</h1>
-<p id="status">Loading messages...</p>
-<div id="messages"></div>
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Inbox</h1>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+</header>
 
-<script>
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-};
+<main class="p-5 max-w-4xl mx-auto space-y-4">
+  <div id="messages" class="space-y-3 text-gray-300">
+    Loading messages...
+  </div>
+</main>
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-const messagesDiv = document.getElementById("messages");
-const statusText = document.getElementById("status");
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
 
-db.collection("support")
-  .orderBy("createdAt", "desc")
-  .onSnapshot(snapshot => {
-    messagesDiv.innerHTML = "";
-    statusText.style.display = "none";
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  await signInAnonymously(auth);
+
+  const messagesDiv = document.getElementById("messages");
+
+  // Listen to supportMessages collection
+  const q = query(collection(db, "supportMessages"), orderBy("createdAt", "desc"));
+  onSnapshot(q, (snapshot) => {
+    messagesDiv.innerHTML = ""; // Clear before rendering
 
     if (snapshot.empty) {
-      statusText.style.display = "block";
-      statusText.innerText = "No support messages yet.";
+      messagesDiv.innerHTML = `<p class="text-gray-400 text-center">No support messages yet.</p>`;
       return;
     }
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      messagesDiv.innerHTML += `
-        <div class="message">
-          <strong>${data.name || "No name"}</strong><br>
-          <small>${data.email || ""} | ${data.phone || ""}</small>
-          <p>${data.message}</p>
-        </div>
+      const createdAt = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : "Unknown date";
+
+      const msgCard = document.createElement("div");
+      msgCard.className = "bg-[#111] p-4 rounded-xl border border-gray-700";
+
+      msgCard.innerHTML = `
+        <p><span class="font-semibold text-brand">Name:</span> ${data.name}</p>
+        <p><span class="font-semibold text-brand">Email:</span> ${data.email}</p>
+        <p><span class="font-semibold text-brand">Phone:</span> ${data.phone}</p>
+        <p><span class="font-semibold text-brand">Message:</span> ${data.message}</p>
+        <p class="text-gray-400 text-sm mt-1">Sent at: ${createdAt}</p>
       `;
+      messagesDiv.appendChild(msgCard);
     });
-  }, error => {
-    statusText.innerText = "Failed to load messages ❌";
-    console.error(error);
   });
 </script>
 
