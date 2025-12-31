@@ -18,6 +18,7 @@
       },
     };
   </script>
+
   <style>
     body { background:#0b0b0b; font-family:Poppins, sans-serif; }
   </style>
@@ -75,11 +76,12 @@
 
 <script>
   // Initialize Firebase
-  firebase.initializeApp({
+  const firebaseConfig = {
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
     projectId: "blackwear-14a31"
-  });
+  };
+  firebase.initializeApp(firebaseConfig);
 
   const db = firebase.firestore();
   const auth = firebase.auth();
@@ -90,15 +92,16 @@
   // Disable submit until auth is ready
   submitBtn.disabled = true;
 
-  // Listen for auth state
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       try {
-        await auth.signInAnonymously();
+        const anonUser = await auth.signInAnonymously();
+        console.log("✅ Signed in anonymously:", anonUser.user.uid);
         return;
       } catch (err) {
         console.error("Auth error:", err);
         status.textContent = "Auth error ❌";
+        status.className = "text-sm mt-3 text-red-500 text-center";
         return;
       }
     }
@@ -112,7 +115,6 @@
       status.className = "text-sm mt-3 text-gray-400 text-center";
 
       try {
-        // Use the collection name "support" to match your rules
         await db.collection("support").add({
           userId: user.uid,
           name: document.getElementById("name").value.trim(),
@@ -125,7 +127,6 @@
         status.textContent = "Message sent successfully ✅";
         status.className = "text-sm mt-3 text-green-500 text-center";
         form.reset();
-
       } catch (err) {
         console.error("Firestore error:", err);
         status.textContent = "Failed to send message ❌";
