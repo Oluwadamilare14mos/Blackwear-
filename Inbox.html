@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Inbox — Blackwear</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inbox — Blackwear</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -23,7 +24,7 @@
 <body class="min-h-screen text-white">
 
 <header class="p-5 bg-dark shadow-lg flex justify-between items-center">
-  <h1 class="text-2xl font-bold text-brand">Unified Inbox</h1>
+  <h1 class="text-2xl font-bold text-brand">Inbox</h1>
   <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
 </header>
 
@@ -46,63 +47,47 @@
 
   const db = firebase.firestore();
   const auth = firebase.auth();
+
   const emptyState = document.getElementById("emptyState");
   const messagesList = document.getElementById("messagesList");
 
+  // Sign in anonymously to satisfy Firestore rules
   auth.signInAnonymously().catch(err => console.error("Auth error:", err));
 
-  auth.onAuthStateChanged(async (user) => {
+  auth.onAuthStateChanged(user => {
     if (!user) return;
 
-    const allMessages = [];
+    // Get all support messages
+    db.collection("supportMessages").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+      messagesList.innerHTML = "";
 
-    const collections = ["contact", "support", "helpSupport"]; // Add your collections here
+      if (snapshot.empty) {
+        emptyState.classList.remove("hidden");
+        messagesList.classList.add("hidden");
+        return;
+      }
 
-    // Fetch messages from all collections
-    for (const col of collections) {
-      const snapshot = await db.collection(col).orderBy("createdAt", "desc").get();
+      emptyState.classList.add("hidden");
+      messagesList.classList.remove("hidden");
+
       snapshot.forEach(doc => {
         const msg = doc.data();
-        msg._collection = col; // optional: track which form it came from
-        allMessages.push(msg);
+        const el = document.createElement("div");
+        el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
+
+        el.innerHTML = `
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-semibold text-brand">${msg.name || "Anonymous"}</h3>
+            <span class="text-xs text-gray-400">${msg.createdAt?.toDate().toLocaleString() || ""}</span>
+          </div>
+          <p class="text-gray-300">${msg.message || ""}</p>
+          <p class="text-xs text-gray-500 mt-1">${msg.email || ""} | ${msg.phone || ""}</p>
+        `;
+        messagesList.appendChild(el);
       });
-    }
-
-    if (allMessages.length === 0) {
-      emptyState.classList.remove("hidden");
-      messagesList.classList.add("hidden");
-      return;
-    }
-
-    // Sort all messages by createdAt descending
-    allMessages.sort((a, b) => {
-      const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-      const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-      return timeB - timeA;
-    });
-
-    emptyState.classList.add("hidden");
-    messagesList.classList.remove("hidden");
-
-    // Render messages
-    allMessages.forEach(msg => {
-      const el = document.createElement("div");
-      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
-
-      el.innerHTML = `
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-semibold text-brand">${msg.name || "Anonymous"}</h3>
-          <span class="text-xs text-gray-400">${msg.createdAt?.toDate().toLocaleString() || ""}</span>
-        </div>
-        <p class="text-gray-300">${msg.message || ""}</p>
-        <p class="text-xs text-gray-500 mt-1">
-          ${msg.email || ""} | ${msg.phone || ""} 
-          ${msg._collection ? " | " + msg._collection : ""}
-        </p>
-      `;
-      messagesList.appendChild(el);
     });
   });
 </script>
+
 </body>
 </html>
