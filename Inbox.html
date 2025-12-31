@@ -1,68 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Inbox — Blackwear</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Inbox</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<style>
+body {
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+h1 {
+  color: orange;
+}
+.message {
+  background: #111;
+  border: 1px solid #333;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+small {
+  color: #aaa;
+}
+</style>
 </head>
 
-<body class="bg-black text-white min-h-screen p-5">
+<body>
 
-  <header class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
-    <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded">Back</a>
-  </header>
-
-  <p id="empty" class="text-gray-400 text-center">Loading messages...</p>
-
-  <div id="messages" class="space-y-4"></div>
+<h1>Inbox</h1>
+<p id="status">Loading messages...</p>
+<div id="messages"></div>
 
 <script>
-  firebase.initializeApp({
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
-  });
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+};
 
-  const db = firebase.firestore();
-  const messages = document.getElementById("messages");
-  const empty = document.getElementById("empty");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  db.collection("support")
-    .orderBy("createdAt", "desc")
-    .onSnapshot(snapshot => {
+const messagesDiv = document.getElementById("messages");
+const statusText = document.getElementById("status");
 
-      messages.innerHTML = "";
+db.collection("support")
+  .orderBy("createdAt", "desc")
+  .onSnapshot(snapshot => {
+    messagesDiv.innerHTML = "";
+    statusText.style.display = "none";
 
-      if (snapshot.empty) {
-        empty.textContent = "No support messages yet.";
-        return;
-      }
+    if (snapshot.empty) {
+      statusText.style.display = "block";
+      statusText.innerText = "No support messages yet.";
+      return;
+    }
 
-      empty.style.display = "none";
-
-      snapshot.forEach(doc => {
-        const d = doc.data();
-
-        const div = document.createElement("div");
-        div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
-
-        div.innerHTML = `
-          <h3 class="text-orange-500 font-semibold">${d.name}</h3>
-          <p class="text-gray-300 mt-1">${d.message}</p>
-          <p class="text-xs text-gray-500 mt-2">
-            ${d.email || ""} ${d.phone ? " | " + d.phone : ""}
-          </p>
-        `;
-
-        messages.appendChild(div);
-      });
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      messagesDiv.innerHTML += `
+        <div class="message">
+          <strong>${data.name || "No name"}</strong><br>
+          <small>${data.email || ""} | ${data.phone || ""}</small>
+          <p>${data.message}</p>
+        </div>
+      `;
     });
+  }, error => {
+    statusText.innerText = "Failed to load messages ❌";
+    console.error(error);
+  });
 </script>
 
 </body>
