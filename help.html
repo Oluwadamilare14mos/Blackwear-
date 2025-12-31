@@ -30,7 +30,6 @@
 
 <body class="min-h-screen text-white">
 
-<!-- HEADER -->
 <header class="flex justify-between items-center p-5 bg-dark shadow-lg">
   <h1 class="text-2xl font-bold text-brand">Help & Support</h1>
   <a href="index.html"
@@ -39,7 +38,6 @@
   </a>
 </header>
 
-<!-- MAIN -->
 <main class="p-5 max-w-4xl mx-auto space-y-6">
 
   <!-- FAQ -->
@@ -120,7 +118,7 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // 🔐 Anonymous Login (CRITICAL)
+  // 🔐 Anonymous Login
   await signInAnonymously(auth);
 
   const form = document.getElementById("supportForm");
@@ -129,6 +127,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     statusMsg.textContent = "Sending message...";
+    statusMsg.className = "text-sm text-gray-400 text-center mt-3";
 
     try {
       await addDoc(collection(db, "supportMessages"), {
@@ -138,7 +137,7 @@
         message: form.message.value.trim(),
         createdAt: serverTimestamp(),
         source: "help-and-support",
-        uid: auth.currentUser.uid
+        userId: auth.currentUser.uid   // ✅ Correct field
       });
 
       statusMsg.textContent = "Message sent successfully ✅";
