@@ -143,7 +143,7 @@
       status.className = "text-sm mt-3 text-gray-400 text-center";
 
       try {
-        await db.collection("supportMessages").add({
+        await db.collection("support").add({
           userId: user.uid,
           name: document.getElementById("name").value.trim(),
           email: document.getElementById("email").value.trim(),
