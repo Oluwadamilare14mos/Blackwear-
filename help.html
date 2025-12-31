@@ -101,72 +101,78 @@
 
 <!-- FIREBASE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31",
-    storageBucket: "blackwear-14a31.firebasestorage.app",
-    messagingSenderId: "222479690292",
-    appId: "1:222479690292:web:82bd91e186da6412133861"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31",
+  storageBucket: "blackwear-14a31.firebasestorage.app",
+  messagingSenderId: "222479690292",
+  appId: "1:222479690292:web:82bd91e186da6412133861"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  const form = document.getElementById("supportForm");
-  const statusMsg = document.getElementById("statusMsg");
-  const submitBtn = form.querySelector("button");
+const form = document.getElementById("supportForm");
+const statusMsg = document.getElementById("statusMsg");
+const submitBtn = form.querySelector("button");
 
-  submitBtn.disabled = true; // disable until auth ready
+submitBtn.disabled = true;
 
-  // Wait for auth to be ready
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      try {
-        await signInAnonymously(auth);
-        return; // wait for onAuthStateChanged to trigger again
-      } catch (err) {
-        console.error("Auth error:", err);
-        statusMsg.textContent = "Auth error ❌";
-        return;
-      }
+// Initialize auth
+async function initAuth() {
+  try {
+    await signInAnonymously(auth);
+  } catch (err) {
+    console.error("Auth error:", err);
+    statusMsg.textContent = "Auth error ❌";
+  }
+}
+
+// Attach form listener only once
+function attachFormListener(user) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusMsg.textContent = "Sending message...";
+    statusMsg.className = "text-sm text-gray-400 text-center mt-3";
+
+    try {
+      await addDoc(collection(db, "supportMessages"), {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        message: form.message.value.trim(),
+        createdAt: serverTimestamp(),
+        source: "help-and-support",
+        uid: user.uid
+      });
+
+      statusMsg.textContent = "Message sent successfully ✅";
+      statusMsg.className = "text-sm text-green-500 text-center mt-3";
+      form.reset();
+    } catch (err) {
+      console.error("Firestore error:", err);
+      statusMsg.textContent = "Failed to send message ❌";
+      statusMsg.className = "text-sm text-red-500 text-center mt-3";
     }
-
-    // Auth ready
-    submitBtn.disabled = false;
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      statusMsg.textContent = "Sending message...";
-      statusMsg.className = "text-sm text-gray-400 text-center mt-3";
-
-      try {
-        await addDoc(collection(db, "supportMessages"), {
-          name: form.name.value.trim(),
-          email: form.email.value.trim(),
-          phone: form.phone.value.trim(),
-          message: form.message.value.trim(),
-          createdAt: serverTimestamp(),
-          source: "help-and-support",
-          uid: user.uid
-        });
-
-        statusMsg.textContent = "Message sent successfully ✅";
-        statusMsg.className = "text-sm text-green-500 text-center mt-3";
-        form.reset();
-
-      } catch (err) {
-        console.error("Firestore error:", err);
-        statusMsg.textContent = "Failed to send message ❌";
-        statusMsg.className = "text-sm text-red-500 text-center mt-3";
-      }
-    });
   });
+}
+
+// Listen for auth state
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    submitBtn.disabled = false;
+    attachFormListener(user);
+  }
+});
+
+// Start auth
+initAuth();
 </script>
 </body>
 </html>
