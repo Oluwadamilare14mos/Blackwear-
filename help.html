@@ -103,7 +103,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -118,39 +118,55 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // 🔐 Anonymous Login
-  await signInAnonymously(auth);
-
   const form = document.getElementById("supportForm");
   const statusMsg = document.getElementById("statusMsg");
+  const submitBtn = form.querySelector("button");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    statusMsg.textContent = "Sending message...";
-    statusMsg.className = "text-sm text-gray-400 text-center mt-3";
+  submitBtn.disabled = true; // disable until auth ready
 
-    try {
-      await addDoc(collection(db, "supportMessages"), {
-        name: form.name.value.trim(),
-        email: form.email.value.trim(),
-        phone: form.phone.value.trim(),
-        message: form.message.value.trim(),
-        createdAt: serverTimestamp(),
-        source: "help-and-support",
-        userId: auth.currentUser.uid   // ✅ Correct field
-      });
-
-      statusMsg.textContent = "Message sent successfully ✅";
-      statusMsg.className = "text-sm text-green-500 text-center mt-3";
-      form.reset();
-
-    } catch (err) {
-      console.error(err);
-      statusMsg.textContent = "Failed to send message ❌";
-      statusMsg.className = "text-sm text-red-500 text-center mt-3";
+  // Wait for auth to be ready
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      try {
+        await signInAnonymously(auth);
+        return; // wait for onAuthStateChanged to trigger again
+      } catch (err) {
+        console.error("Auth error:", err);
+        statusMsg.textContent = "Auth error ❌";
+        return;
+      }
     }
+
+    // Auth ready
+    submitBtn.disabled = false;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusMsg.textContent = "Sending message...";
+      statusMsg.className = "text-sm text-gray-400 text-center mt-3";
+
+      try {
+        await addDoc(collection(db, "supportMessages"), {
+          name: form.name.value.trim(),
+          email: form.email.value.trim(),
+          phone: form.phone.value.trim(),
+          message: form.message.value.trim(),
+          createdAt: serverTimestamp(),
+          source: "help-and-support",
+          uid: user.uid
+        });
+
+        statusMsg.textContent = "Message sent successfully ✅";
+        statusMsg.className = "text-sm text-green-500 text-center mt-3";
+        form.reset();
+
+      } catch (err) {
+        console.error("Firestore error:", err);
+        statusMsg.textContent = "Failed to send message ❌";
+        statusMsg.className = "text-sm text-red-500 text-center mt-3";
+      }
+    });
   });
 </script>
-
 </body>
 </html>
