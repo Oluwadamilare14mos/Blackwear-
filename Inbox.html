@@ -1,55 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Inbox — Blackwear</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: "#ff7f00",
-            dark: "#0b0b0b",
-            card: "#111"
-          },
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },
-        },
-      },
-    };
-  </script>
-
-  <style>
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 
-<body class="min-h-screen text-white">
+<body class="bg-black text-white min-h-screen p-5">
 
-<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
-  <h1 class="text-2xl font-bold text-brand">Inbox</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
-</header>
+  <header class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
+    <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded">Back</a>
+  </header>
 
-<main class="p-5 max-w-4xl mx-auto space-y-6">
-  <div id="emptyState" class="text-gray-400 text-center">
-    No support messages yet.
-  </div>
+  <p id="empty" class="text-gray-400 text-center">Loading messages...</p>
 
-  <div id="messagesList" class="space-y-5 hidden"></div>
-</main>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <div id="messages" class="space-y-4"></div>
 
 <script>
-  // Firebase config
   firebase.initializeApp({
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
@@ -57,63 +30,39 @@
   });
 
   const db = firebase.firestore();
-  const auth = firebase.auth();
+  const messages = document.getElementById("messages");
+  const empty = document.getElementById("empty");
 
-  const emptyState = document.getElementById("emptyState");
-  const messagesList = document.getElementById("messagesList");
+  db.collection("support")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
 
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      await auth.signInAnonymously();
-      return;
-    }
+      messages.innerHTML = "";
 
-    console.log("✅ Inbox auth UID:", user.uid);
+      if (snapshot.empty) {
+        empty.textContent = "No support messages yet.";
+        return;
+      }
 
-    db.collection("support")
-      .where("userId", "==", user.uid)
-      .orderBy("createdAt", "desc")
-      .onSnapshot(snapshot => {
+      empty.style.display = "none";
 
-        messagesList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
 
-        if (snapshot.empty) {
-          emptyState.classList.remove("hidden");
-          messagesList.classList.add("hidden");
-          return;
-        }
+        const div = document.createElement("div");
+        div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
-        emptyState.classList.add("hidden");
-        messagesList.classList.remove("hidden");
+        div.innerHTML = `
+          <h3 class="text-orange-500 font-semibold">${d.name}</h3>
+          <p class="text-gray-300 mt-1">${d.message}</p>
+          <p class="text-xs text-gray-500 mt-2">
+            ${d.email || ""} ${d.phone ? " | " + d.phone : ""}
+          </p>
+        `;
 
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const div = document.createElement("div");
-
-          div.className =
-            "bg-card p-5 rounded-xl border border-gray-700 shadow-lg";
-
-          div.innerHTML = `
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="font-semibold text-brand">
-                ${msg.name || "User"}
-              </h3>
-              <span class="text-xs text-gray-400">
-                ${msg.createdAt?.toDate().toLocaleString() || ""}
-              </span>
-            </div>
-
-            <p class="text-gray-300 mb-2">${msg.message || ""}</p>
-
-            <p class="text-xs text-gray-500">
-              ${msg.email || ""} ${msg.phone ? " | " + msg.phone : ""}
-            </p>
-          `;
-
-          messagesList.appendChild(div);
-        });
+        messages.appendChild(div);
       });
-  });
+    });
 </script>
 
 </body>
