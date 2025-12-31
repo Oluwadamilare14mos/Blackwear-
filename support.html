@@ -114,37 +114,55 @@
 
   const db = firebase.firestore();
   const auth = firebase.auth();
+  const form = document.getElementById("supportForm");
+  const status = document.getElementById("statusMsg");
+  const submitBtn = form.querySelector("button");
 
-  // ✅ Anonymous Authentication (NO LOGIN REQUIRED)
-  auth.signInAnonymously().catch(err => console.error(err));
+  // Disable submit until auth is ready
+  submitBtn.disabled = true;
 
-  document.getElementById("supportForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const status = document.getElementById("statusMsg");
-    status.textContent = "Sending message...";
-    status.className = "text-sm mt-3 text-gray-400 text-center";
-
-    try {
-      await db.collection("supportMessages").add({
-        name: document.getElementById("name").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        message: document.getElementById("message").value.trim(),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      status.textContent = "Message sent successfully ✅";
-      status.className = "text-sm mt-3 text-green-500 text-center";
-      document.getElementById("supportForm").reset();
-
-    } catch (err) {
-      status.textContent = "Failed to send message ❌";
-      status.className = "text-sm mt-3 text-red-500 text-center";
-      console.error(err);
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      try {
+        await auth.signInAnonymously();
+        return;
+      } catch (err) {
+        console.error("Auth error:", err);
+        status.textContent = "Auth error ❌";
+        return;
+      }
     }
+
+    console.log("✅ Auth ready:", user.uid);
+    submitBtn.disabled = false;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      status.textContent = "Sending message...";
+      status.className = "text-sm mt-3 text-gray-400 text-center";
+
+      try {
+        await db.collection("supportMessages").add({
+          userId: user.uid,
+          name: document.getElementById("name").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          message: document.getElementById("message").value.trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        status.textContent = "Message sent successfully ✅";
+        status.className = "text-sm mt-3 text-green-500 text-center";
+        form.reset();
+
+      } catch (err) {
+        console.error("Firestore error:", err);
+        status.textContent = "Failed to send message ❌";
+        status.className = "text-sm mt-3 text-red-500 text-center";
+      }
+    });
   });
 </script>
-
 </body>
 </html>
