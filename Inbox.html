@@ -5,123 +5,111 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inbox — Blackwear</title>
 
-  <!-- Fonts & Tailwind -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: { brand: "#ff7f00", dark: "#0b0b0b" },
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },
-        },
-      },
-    };
+          colors: {
+            brand: "#ff7f00",
+            dark: "#0b0b0b"
+          }
+        }
+      }
+    }
   </script>
 
   <style>
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+    body { background:#0b0b0b; }
   </style>
 </head>
 
-<body class="min-h-screen text-white">
+<body class="text-white min-h-screen">
 
-<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+<!-- HEADER -->
+<header class="p-5 bg-dark flex justify-between items-center shadow-lg">
   <h1 class="text-2xl font-bold text-brand">Inbox</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">
+    Back
+  </a>
 </header>
 
-<main class="p-5 max-w-4xl mx-auto space-y-4">
-  <div id="messages" class="space-y-3 text-gray-300">
+<!-- MAIN -->
+<main class="max-w-4xl mx-auto p-5">
+
+  <div id="inbox" class="space-y-4 text-gray-300">
     Loading messages...
   </div>
+
 </main>
 
-  <section class="bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg mt-6">
-  <h2 class="text-xl font-semibold text-brand mb-3">My Messages</h2>
-  <div id="inboxContainer" class="space-y-3 text-gray-400">
-    Loading messages...
-  </div>
-  </section>
-
-<!-- Firebase -->
+<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
 };
 
-// Initialize
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+const inbox = document.getElementById("inbox");
 
-const inboxContainer = document.getElementById("inboxContainer");
-
-// Ensure user is logged in (anonymous)
-async function initAuth() {
-  if (!auth.currentUser) {
-    try {
-      await signInAnonymously(auth);
-    } catch (err) {
-      console.error("Auth error:", err);
-      inboxContainer.innerHTML = "<p>Auth error ❌</p>";
-    }
-  }
-}
-
-// Load all messages for the current user
-async function loadInbox(user) {
-  inboxContainer.innerHTML = "Loading messages...";
+async function loadInbox() {
+  inbox.innerHTML = "Loading messages...";
 
   try {
     const q = query(
-      collection(db, "supportMessages"), // your collection name
-      where("uid", "==", user.uid),
+      collection(db, "supportMessages"),
       orderBy("createdAt", "desc")
     );
 
     const snapshot = await getDocs(q);
 
-    inboxContainer.innerHTML = "";
-
     if (snapshot.empty) {
-      inboxContainer.innerHTML = "<p>No messages yet.</p>";
+      inbox.innerHTML = "<p>No messages yet.</p>";
       return;
     }
 
+    inbox.innerHTML = "";
+
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const msgEl = document.createElement("div");
-      msgEl.className = "bg-dark p-4 rounded-lg border border-gray-700";
-      msgEl.innerHTML = `
-        <p><strong>${data.name}</strong> (${data.email})</p>
-        <p class="text-sm mt-1">${data.message}</p>
-        <p class="text-xs text-gray-500 mt-1">${data.createdAt?.toDate().toLocaleString()}</p>
+      const d = doc.data();
+
+      const item = document.createElement("div");
+      item.className = "bg-dark border border-gray-700 p-4 rounded-lg";
+
+      item.innerHTML = `
+        <p class="font-semibold text-brand">${d.name}</p>
+        <p class="text-sm text-gray-400">${d.email} • ${d.phone || "No phone"}</p>
+        <p class="mt-2">${d.message}</p>
+        <p class="text-xs text-gray-500 mt-2">
+          ${d.createdAt?.toDate().toLocaleString()}
+        </p>
       `;
-      inboxContainer.appendChild(msgEl);
+
+      inbox.appendChild(item);
     });
+
   } catch (err) {
-    console.error("Error loading inbox:", err);
-    inboxContainer.innerHTML = "<p>Failed to load messages ❌</p>";
+    console.error(err);
+    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
   }
 }
 
-// Listen for auth state
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    await loadInbox(user);
-  } else {
-    await initAuth();
-  }
-});
+loadInbox();
 </script>
+
 </body>
 </html>
