@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox — Blackwear</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -14,15 +14,15 @@
   <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
-<main class="p-5 max-w-3xl mx-auto">
-  <div id="inbox" class="space-y-4 text-gray-300">
-    Loading messages...
-  </div>
+<main class="p-5 max-w-3xl mx-auto space-y-6" id="inbox">
+  Loading messages...
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getFirestore, collection, getDocs, query, orderBy, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -38,29 +38,83 @@ const inbox = document.getElementById("inbox");
 
 await signInAnonymously(auth);
 
-try {
-  const snap = await getDocs(collection(db, "support"));
-  inbox.innerHTML = "";
+// LOAD MESSAGES
+const messagesSnap = await getDocs(
+  query(collection(db, "support"), orderBy("createdAt", "desc"))
+);
 
-  if (snap.empty) {
-    inbox.innerHTML = "<p>No messages yet.</p>";
-  }
+inbox.innerHTML = "";
 
-  snap.forEach(doc => {
-    const d = doc.data();
-    const div = document.createElement("div");
-    div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
-    div.innerHTML = `
-      <p class="font-semibold text-orange-500">${d.name}</p>
-      <p class="text-sm text-gray-400">${d.email}</p>
-      <p class="mt-2">${d.message}</p>
-    `;
-    inbox.appendChild(div);
+if (messagesSnap.empty) {
+  inbox.innerHTML = "<p class='text-gray-400'>No messages yet.</p>";
+}
+
+for (const msg of messagesSnap.docs) {
+  const data = msg.data();
+  const msgId = msg.id;
+
+  const box = document.createElement("div");
+  box.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
+
+  box.innerHTML = `
+    <p class="font-semibold text-orange-500">${data.name}</p>
+    <p class="text-sm text-gray-400">${data.email}</p>
+    <p class="mt-2">${data.message}</p>
+
+    <div class="mt-4 space-y-2" id="replies-${msgId}">
+      <p class="text-xs text-gray-500">Replies:</p>
+    </div>
+
+    <form class="mt-3 flex gap-2 reply-form">
+      <input
+        type="text"
+        placeholder="Type reply..."
+        class="flex-1 bg-black border border-gray-600 p-2 rounded text-sm reply-input"
+        required
+      />
+      <button class="bg-orange-500 text-black px-3 rounded text-sm">
+        Send
+      </button>
+    </form>
+  `;
+
+  inbox.appendChild(box);
+
+  // LOAD REPLIES
+  const repliesBox = box.querySelector(`#replies-${msgId}`);
+  const repliesSnap = await getDocs(
+    query(
+      collection(db, "support", msgId, "replies"),
+      orderBy("createdAt", "asc")
+    )
+  );
+
+  repliesSnap.forEach(r => {
+    const rep = r.data();
+    const p = document.createElement("p");
+    p.className = rep.sender === "admin"
+      ? "text-green-400 text-sm"
+      : "text-blue-400 text-sm";
+    p.textContent = `${rep.sender}: ${rep.text}`;
+    repliesBox.appendChild(p);
   });
 
-} catch (err) {
-  console.error(err);
-  inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+  // SEND REPLY
+  box.querySelector(".reply-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const input = box.querySelector(".reply-input");
+
+    await addDoc(
+      collection(db, "support", msgId, "replies"),
+      {
+        text: input.value,
+        sender: "admin",
+        createdAt: serverTimestamp()
+      }
+    );
+
+    location.reload(); // simple + reliable
+  });
 }
 </script>
 
