@@ -6,17 +6,19 @@
 <title>Inbox — Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body { background: #0b0b0b; color: white; font-family: 'Poppins', sans-serif; }
+  body { background: #0b0b0b; }
 </style>
 </head>
-<body class="min-h-screen">
+<body class="text-white min-h-screen">
 
-<header class="p-5 bg-[#111] flex justify-between items-center shadow-lg">
+<!-- HEADER -->
+<header class="p-5 bg-[#0b0b0b] flex justify-between items-center shadow-lg">
   <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
   <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg font-semibold">Back</a>
 </header>
 
-<main class="p-5 max-w-3xl mx-auto space-y-4">
+<!-- MAIN -->
+<main class="p-5 max-w-4xl mx-auto">
   <div id="inbox" class="space-y-4 text-gray-300">Loading messages...</div>
 </main>
 
@@ -35,19 +37,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
 const inbox = document.getElementById("inbox");
 
 // Sign in anonymously
 await signInAnonymously(auth);
 
-// Load inbox for current user
 async function loadInbox(user) {
   inbox.innerHTML = "Loading messages...";
+
   try {
-    // Get all support messages for this user
+    // Load user's support messages
     const q = query(
-      collection(db, "support"),
+      collection(db, "supportMessages"),
       where("userId", "==", user.uid),
       orderBy("createdAt", "desc")
     );
@@ -60,32 +61,29 @@ async function loadInbox(user) {
       return;
     }
 
-    // Loop through each support message
     for (const doc of snap.docs) {
       const data = doc.data();
       const msgDiv = document.createElement("div");
       msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
-      // Message content
       msgDiv.innerHTML = `
         <p class="font-semibold text-orange-500">${data.name}</p>
         <p class="text-sm text-gray-400">${data.email}</p>
         <p class="mt-2">${data.message}</p>
       `;
 
-      // Create a container for replies
+      // Load replies subcollection
+      const repliesSnap = await getDocs(collection(db, `supportMessages/${doc.id}/replies`));
       const repliesDiv = document.createElement("div");
       repliesDiv.className = "mt-3 space-y-2 pl-4 border-l border-gray-600";
 
-      // Load replies for this message
-      const repliesSnap = await getDocs(collection(db, `support/${doc.id}/replies`));
       if (!repliesSnap.empty) {
-        repliesSnap.forEach(replyDoc => {
-          const r = replyDoc.data();
+        repliesSnap.forEach(rDoc => {
+          const r = rDoc.data();
           const rDiv = document.createElement("div");
           rDiv.className = "bg-[#222] p-2 rounded-lg";
           rDiv.innerHTML = `
-            <p class="text-sm font-semibold">${r.sender === 'admin' ? 'Support' : 'You'}</p>
+            <p class="text-sm font-semibold">${r.sender === "admin" ? "Support" : "You"}</p>
             <p class="text-gray-300 text-sm mt-1">${r.message}</p>
           `;
           repliesDiv.appendChild(rDiv);
@@ -112,6 +110,5 @@ onAuthStateChanged(auth, user => {
   if (user) loadInbox(user);
 });
 </script>
-
 </body>
 </html>
