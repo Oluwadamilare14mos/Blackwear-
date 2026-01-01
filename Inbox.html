@@ -40,55 +40,80 @@
 
 <!-- Firebase -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31",
-    storageBucket: "blackwear-14a31.firebasestorage.app",
-    messagingSenderId: "222479690292",
-    appId: "1:222479690292:web:82bd91e186da6412133861"
-  };
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+// Initialize
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  await signInAnonymously(auth);
+const inboxContainer = document.getElementById("inboxContainer");
 
-  const messagesDiv = document.getElementById("messages");
+// Ensure user is logged in (anonymous)
+async function initAuth() {
+  if (!auth.currentUser) {
+    try {
+      await signInAnonymously(auth);
+    } catch (err) {
+      console.error("Auth error:", err);
+      inboxContainer.innerHTML = "<p>Auth error ❌</p>";
+    }
+  }
+}
 
-  // Listen to supportMessages collection
-  const q = query(collection(db, "supportMessages"), orderBy("createdAt", "desc"));
-  onSnapshot(q, (snapshot) => {
-    messagesDiv.innerHTML = ""; // Clear before rendering
+// Load all messages for the current user
+async function loadInbox(user) {
+  inboxContainer.innerHTML = "Loading messages...";
+
+  try {
+    const q = query(
+      collection(db, "supportMessages"), // your collection name
+      where("uid", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    inboxContainer.innerHTML = "";
 
     if (snapshot.empty) {
-      messagesDiv.innerHTML = `<p class="text-gray-400 text-center">No support messages yet.</p>`;
+      inboxContainer.innerHTML = "<p>No messages yet.</p>";
       return;
     }
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const createdAt = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : "Unknown date";
-
-      const msgCard = document.createElement("div");
-      msgCard.className = "bg-[#111] p-4 rounded-xl border border-gray-700";
-
-      msgCard.innerHTML = `
-        <p><span class="font-semibold text-brand">Name:</span> ${data.name}</p>
-        <p><span class="font-semibold text-brand">Email:</span> ${data.email}</p>
-        <p><span class="font-semibold text-brand">Phone:</span> ${data.phone}</p>
-        <p><span class="font-semibold text-brand">Message:</span> ${data.message}</p>
-        <p class="text-gray-400 text-sm mt-1">Sent at: ${createdAt}</p>
+      const msgEl = document.createElement("div");
+      msgEl.className = "bg-dark p-4 rounded-lg border border-gray-700";
+      msgEl.innerHTML = `
+        <p><strong>${data.name}</strong> (${data.email})</p>
+        <p class="text-sm mt-1">${data.message}</p>
+        <p class="text-xs text-gray-500 mt-1">${data.createdAt?.toDate().toLocaleString()}</p>
       `;
-      messagesDiv.appendChild(msgCard);
+      inboxContainer.appendChild(msgEl);
     });
-  });
-</script>
+  } catch (err) {
+    console.error("Error loading inbox:", err);
+    inboxContainer.innerHTML = "<p>Failed to load messages ❌</p>";
+  }
+}
 
+// Listen for auth state
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await loadInbox(user);
+  } else {
+    await initAuth();
+  }
+});
 </body>
 </html>
