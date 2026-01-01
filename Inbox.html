@@ -9,21 +9,22 @@
 
 <body class="bg-black text-white min-h-screen">
 
-<header class="p-5 bg-[#0b0b0b] flex justify-between items-center shadow-lg">
+<header class="p-5 bg-[#0b0b0b] flex justify-between items-center">
   <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
   <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
 <main class="p-5 max-w-3xl mx-auto">
-  <div id="inbox" class="space-y-4 text-gray-300">Loading messages...</div>
+  <div id="inbox" class="space-y-4 text-gray-300">
+    Loading messages...
+  </div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -33,85 +34,34 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const inbox = document.getElementById("inbox");
 
-const inboxEl = document.getElementById("inbox");
-
-// Sign in anonymously
 await signInAnonymously(auth);
-const user = auth.currentUser;
 
-if (!user) {
-  inboxEl.innerHTML = "<p class='text-red-500'>Auth failed ❌</p>";
-}
+try {
+  const snap = await getDocs(collection(db, "support"));
+  inbox.innerHTML = "";
 
-// Load all messages for current user
-async function loadInbox() {
-  inboxEl.innerHTML = "Loading messages...";
-
-  try {
-    const q = query(
-      collection(db, "supportMessages"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
-
-    inboxEl.innerHTML = "";
-
-    if (snapshot.empty) {
-      inboxEl.innerHTML = "<p>No messages yet.</p>";
-      return;
-    }
-
-    // For each message
-    for (const doc of snapshot.docs) {
-      const msgData = doc.data();
-
-      const msgDiv = document.createElement("div");
-      msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-2";
-
-      msgDiv.innerHTML = `
-        <p class="font-semibold text-orange-500">${msgData.name}</p>
-        <p class="text-sm text-gray-400">${msgData.email}</p>
-        <p class="mt-2">${msgData.message}</p>
-        <div class="replies space-y-2 mt-2"></div>
-      `;
-
-      inboxEl.appendChild(msgDiv);
-
-      // Load replies subcollection
-      const repliesQ = query(
-        collection(db, `supportMessages/${doc.id}/replies`),
-        orderBy("createdAt", "asc")
-      );
-
-      const repliesSnap = await getDocs(repliesQ);
-      const repliesContainer = msgDiv.querySelector(".replies");
-
-      if (!repliesSnap.empty) {
-        repliesSnap.forEach(replyDoc => {
-          const r = replyDoc.data();
-          const rDiv = document.createElement("div");
-          rDiv.className = r.sender === "admin" 
-            ? "bg-green-700 p-2 rounded text-black" 
-            : "bg-gray-800 p-2 rounded text-white";
-
-          rDiv.innerHTML = `<strong>${r.sender}:</strong> ${r.message}`;
-          repliesContainer.appendChild(rDiv);
-        });
-      } else {
-        repliesContainer.innerHTML = "<p class='text-gray-500 text-sm'>No replies yet.</p>";
-      }
-    }
-
-  } catch (err) {
-    console.error("Inbox error:", err);
-    inboxEl.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+  if (snap.empty) {
+    inbox.innerHTML = "<p>No messages yet.</p>";
   }
-}
 
-loadInbox();
+  snap.forEach(doc => {
+    const d = doc.data();
+    const div = document.createElement("div");
+    div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
+    div.innerHTML = `
+      <p class="font-semibold text-orange-500">${d.name}</p>
+      <p class="text-sm text-gray-400">${d.email}</p>
+      <p class="mt-2">${d.message}</p>
+    `;
+    inbox.appendChild(div);
+  });
+
+} catch (err) {
+  console.error(err);
+  inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+}
 </script>
 
 </body>
