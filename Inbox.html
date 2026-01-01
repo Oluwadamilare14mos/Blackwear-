@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inbox — Blackwear</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script>
@@ -28,27 +27,35 @@
 
 <body class="text-white min-h-screen">
 
-<!-- HEADER -->
 <header class="p-5 bg-dark flex justify-between items-center shadow-lg">
   <h1 class="text-2xl font-bold text-brand">Inbox</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">
+  <a href="index.html"
+     class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">
     Back
   </a>
 </header>
 
-<!-- MAIN -->
 <main class="max-w-4xl mx-auto p-5">
-
   <div id="inbox" class="space-y-4 text-gray-300">
     Loading messages...
   </div>
-
 </main>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -58,43 +65,63 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
 const inbox = document.getElementById("inbox");
 
-async function loadInbox() {
+// Ensure auth
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    await signInAnonymously(auth);
+    return;
+  }
+
+  loadInbox(user.uid);
+});
+
+async function loadInbox(uid) {
   inbox.innerHTML = "Loading messages...";
 
   try {
-    const snapshot = await getDocs(collection(db, "supportMessages"));
+    const q = query(
+      collection(db, "support"),
+      where("userId", "==", uid),
+      orderBy("createdAt", "desc")
+    );
 
-    if (snapshot.empty) {
-      inbox.innerHTML = "<p>No messages yet.</p>";
-      return;
-    }
+    const snap = await getDocs(q);
 
     inbox.innerHTML = "";
 
-    snapshot.forEach(doc => {
+    if (snap.empty) {
+      inbox.innerHTML = "<p>No support messages yet.</p>";
+      return;
+    }
+
+    snap.forEach(doc => {
       const d = doc.data();
 
       const el = document.createElement("div");
       el.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
       el.innerHTML = `
-        <p class="text-brand font-semibold">${d.name}</p>
+        <p class="font-semibold text-brand">${d.name}</p>
         <p class="text-sm text-gray-400">${d.email}</p>
         <p class="mt-2">${d.message}</p>
+        <p class="text-xs text-gray-500 mt-1">
+          ${d.createdAt?.toDate().toLocaleString()}
+        </p>
       `;
 
       inbox.appendChild(el);
     });
 
   } catch (err) {
-    console.error("Inbox error:", err);
-    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+    console.error(err);
+    inbox.innerHTML =
+      "<p class='text-red-500'>Failed to load inbox ❌</p>";
   }
 }
-
-loadInbox();
 </script>
 
 </body>
