@@ -5,27 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox — Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body { background: #0b0b0b; }
-</style>
 </head>
-<body class="text-white min-h-screen">
 
-<!-- HEADER -->
+<body class="bg-black text-white min-h-screen">
+
 <header class="p-5 bg-[#0b0b0b] flex justify-between items-center shadow-lg">
   <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
-  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
-<!-- MAIN -->
-<main class="p-5 max-w-4xl mx-auto">
+<main class="p-5 max-w-3xl mx-auto">
   <div id="inbox" class="space-y-4 text-gray-300">Loading messages...</div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -37,78 +33,86 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const inbox = document.getElementById("inbox");
+
+const inboxEl = document.getElementById("inbox");
 
 // Sign in anonymously
 await signInAnonymously(auth);
+const user = auth.currentUser;
 
-async function loadInbox(user) {
-  inbox.innerHTML = "Loading messages...";
+if (!user) {
+  inboxEl.innerHTML = "<p class='text-red-500'>Auth failed ❌</p>";
+}
+
+// Load all messages for current user
+async function loadInbox() {
+  inboxEl.innerHTML = "Loading messages...";
 
   try {
-    // Load user's support messages
     const q = query(
       collection(db, "supportMessages"),
       where("userId", "==", user.uid),
       orderBy("createdAt", "desc")
     );
 
-    const snap = await getDocs(q);
-    inbox.innerHTML = "";
+    const snapshot = await getDocs(q);
 
-    if (snap.empty) {
-      inbox.innerHTML = "<p>No messages yet.</p>";
+    inboxEl.innerHTML = "";
+
+    if (snapshot.empty) {
+      inboxEl.innerHTML = "<p>No messages yet.</p>";
       return;
     }
 
-    for (const doc of snap.docs) {
-      const data = doc.data();
+    // For each message
+    for (const doc of snapshot.docs) {
+      const msgData = doc.data();
+
       const msgDiv = document.createElement("div");
-      msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
+      msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-2";
 
       msgDiv.innerHTML = `
-        <p class="font-semibold text-orange-500">${data.name}</p>
-        <p class="text-sm text-gray-400">${data.email}</p>
-        <p class="mt-2">${data.message}</p>
+        <p class="font-semibold text-orange-500">${msgData.name}</p>
+        <p class="text-sm text-gray-400">${msgData.email}</p>
+        <p class="mt-2">${msgData.message}</p>
+        <div class="replies space-y-2 mt-2"></div>
       `;
 
+      inboxEl.appendChild(msgDiv);
+
       // Load replies subcollection
-      const repliesSnap = await getDocs(collection(db, `supportMessages/${doc.id}/replies`));
-      const repliesDiv = document.createElement("div");
-      repliesDiv.className = "mt-3 space-y-2 pl-4 border-l border-gray-600";
+      const repliesQ = query(
+        collection(db, `supportMessages/${doc.id}/replies`),
+        orderBy("createdAt", "asc")
+      );
+
+      const repliesSnap = await getDocs(repliesQ);
+      const repliesContainer = msgDiv.querySelector(".replies");
 
       if (!repliesSnap.empty) {
-        repliesSnap.forEach(rDoc => {
-          const r = rDoc.data();
+        repliesSnap.forEach(replyDoc => {
+          const r = replyDoc.data();
           const rDiv = document.createElement("div");
-          rDiv.className = "bg-[#222] p-2 rounded-lg";
-          rDiv.innerHTML = `
-            <p class="text-sm font-semibold">${r.sender === "admin" ? "Support" : "You"}</p>
-            <p class="text-gray-300 text-sm mt-1">${r.message}</p>
-          `;
-          repliesDiv.appendChild(rDiv);
+          rDiv.className = r.sender === "admin" 
+            ? "bg-green-700 p-2 rounded text-black" 
+            : "bg-gray-800 p-2 rounded text-white";
+
+          rDiv.innerHTML = `<strong>${r.sender}:</strong> ${r.message}`;
+          repliesContainer.appendChild(rDiv);
         });
       } else {
-        const noReplies = document.createElement("p");
-        noReplies.className = "text-gray-500 text-sm";
-        noReplies.textContent = "No replies yet.";
-        repliesDiv.appendChild(noReplies);
+        repliesContainer.innerHTML = "<p class='text-gray-500 text-sm'>No replies yet.</p>";
       }
-
-      msgDiv.appendChild(repliesDiv);
-      inbox.appendChild(msgDiv);
     }
 
   } catch (err) {
     console.error("Inbox error:", err);
-    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+    inboxEl.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
   }
 }
 
-// Listen for auth state
-onAuthStateChanged(auth, user => {
-  if (user) loadInbox(user);
-});
+loadInbox();
 </script>
+
 </body>
 </html>
