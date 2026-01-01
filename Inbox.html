@@ -9,21 +9,21 @@
 
 <body class="bg-black text-white min-h-screen">
 
-<header class="p-5 flex justify-between items-center bg-[#0b0b0b]">
+<header class="p-5 bg-[#0b0b0b] flex justify-between items-center">
   <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
   <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
 <main class="p-5 max-w-3xl mx-auto">
   <div id="inbox" class="space-y-4 text-gray-300">
-    Loading inbox...
+    Loading messages...
   </div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -36,52 +36,33 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const inbox = document.getElementById("inbox");
 
-// Ensure auth
-async function ensureAuth() {
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
+await signInAnonymously(auth);
+
+try {
+  const snap = await getDocs(collection(db, "support"));
+  inbox.innerHTML = "";
+
+  if (snap.empty) {
+    inbox.innerHTML = "<p>No messages yet.</p>";
   }
+
+  snap.forEach(doc => {
+    const d = doc.data();
+    const div = document.createElement("div");
+    div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
+    div.innerHTML = `
+      <p class="font-semibold text-orange-500">${d.name}</p>
+      <p class="text-sm text-gray-400">${d.email}</p>
+      <p class="mt-2">${d.message}</p>
+    `;
+    inbox.appendChild(div);
+  });
+
+} catch (err) {
+  console.error(err);
+  inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
 }
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    await ensureAuth();
-    return;
-  }
-
-  try {
-    const q = query(
-      collection(db, "support"),     // ✅ CORRECT COLLECTION
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const snap = await getDocs(q);
-    inbox.innerHTML = "";
-
-    if (snap.empty) {
-      inbox.innerHTML = "<p>No messages yet.</p>";
-      return;
-    }
-
-    snap.forEach(doc => {
-      const d = doc.data();
-      const div = document.createElement("div");
-      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
-      div.innerHTML = `
-        <p class="font-semibold text-orange-500">${d.name}</p>
-        <p class="text-sm text-gray-400">${d.email}</p>
-        <p class="mt-2">${d.message}</p>
-      `;
-      inbox.appendChild(div);
-    });
-
-  } catch (err) {
-    console.error(err);
-    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
-  }
-});
 </script>
 
 </body>
-</html>p
+</html>
