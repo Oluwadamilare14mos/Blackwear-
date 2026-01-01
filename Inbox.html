@@ -1,61 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inbox — Blackwear</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: "#ff7f00",
-            dark: "#0b0b0b"
-          }
-        }
-      }
-    }
-  </script>
-
-  <style>
-    body { background:#0b0b0b; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox — Blackwear</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="text-white min-h-screen">
+<body class="bg-black text-white min-h-screen">
 
-<header class="p-5 bg-dark flex justify-between items-center shadow-lg">
-  <h1 class="text-2xl font-bold text-brand">Inbox</h1>
-  <a href="index.html"
-     class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">
-    Back
-  </a>
+<header class="p-5 flex justify-between items-center bg-[#0b0b0b]">
+  <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
+  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
-<main class="max-w-4xl mx-auto p-5">
+<main class="p-5 max-w-3xl mx-auto">
   <div id="inbox" class="space-y-4 text-gray-300">
-    Loading messages...
+    Loading inbox...
   </div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -66,63 +34,54 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
 const inbox = document.getElementById("inbox");
 
 // Ensure auth
+async function ensureAuth() {
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    await signInAnonymously(auth);
+    await ensureAuth();
     return;
   }
 
-  loadInbox(user.uid);
-});
-
-async function loadInbox(uid) {
-  inbox.innerHTML = "Loading messages...";
-
   try {
     const q = query(
-      collection(db, "support"),
-      where("userId", "==", uid),
+      collection(db, "support"),     // ✅ CORRECT COLLECTION
+      where("userId", "==", user.uid),
       orderBy("createdAt", "desc")
     );
 
     const snap = await getDocs(q);
-
     inbox.innerHTML = "";
 
     if (snap.empty) {
-      inbox.innerHTML = "<p>No support messages yet.</p>";
+      inbox.innerHTML = "<p>No messages yet.</p>";
       return;
     }
 
     snap.forEach(doc => {
       const d = doc.data();
-
-      const el = document.createElement("div");
-      el.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
-
-      el.innerHTML = `
-        <p class="font-semibold text-brand">${d.name}</p>
+      const div = document.createElement("div");
+      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
+      div.innerHTML = `
+        <p class="font-semibold text-orange-500">${d.name}</p>
         <p class="text-sm text-gray-400">${d.email}</p>
         <p class="mt-2">${d.message}</p>
-        <p class="text-xs text-gray-500 mt-1">
-          ${d.createdAt?.toDate().toLocaleString()}
-        </p>
       `;
-
-      inbox.appendChild(el);
+      inbox.appendChild(div);
     });
 
   } catch (err) {
     console.error(err);
-    inbox.innerHTML =
-      "<p class='text-red-500'>Failed to load inbox ❌</p>";
+    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
   }
-}
+});
 </script>
 
 </body>
-</html>
+</html>p
