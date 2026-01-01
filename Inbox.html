@@ -46,15 +46,9 @@
 </main>
 
 <!-- FIREBASE -->
-<script type="module">
+</<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  query,
-  orderBy,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
@@ -70,12 +64,7 @@ async function loadInbox() {
   inbox.innerHTML = "Loading messages...";
 
   try {
-    const q = query(
-      collection(db, "supportMessages"),
-      orderBy("createdAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, "supportMessages"));
 
     if (snapshot.empty) {
       inbox.innerHTML = "<p>No messages yet.</p>";
@@ -87,29 +76,26 @@ async function loadInbox() {
     snapshot.forEach(doc => {
       const d = doc.data();
 
-      const item = document.createElement("div");
-      item.className = "bg-dark border border-gray-700 p-4 rounded-lg";
+      const el = document.createElement("div");
+      el.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
-      item.innerHTML = `
-        <p class="font-semibold text-brand">${d.name}</p>
-        <p class="text-sm text-gray-400">${d.email} • ${d.phone || "No phone"}</p>
+      el.innerHTML = `
+        <p class="text-brand font-semibold">${d.name}</p>
+        <p class="text-sm text-gray-400">${d.email}</p>
         <p class="mt-2">${d.message}</p>
-        <p class="text-xs text-gray-500 mt-2">
-          ${d.createdAt?.toDate().toLocaleString()}
-        </p>
       `;
 
-      inbox.appendChild(item);
+      inbox.appendChild(el);
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Inbox error:", err);
     inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
   }
 }
 
 loadInbox();
-</script>
+</script>>
 
 </body>
 </html>
