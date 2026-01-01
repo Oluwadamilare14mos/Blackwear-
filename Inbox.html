@@ -1,52 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inbox — Blackwear</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: "#ff7f00",
-            dark: "#0b0b0b",
-            reply: "#1f2937"
-          },
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },
-        },
-      },
-    };
-  </script>
-
-  <style>
-    body { background: #0b0b0b; font-family: Poppins, sans-serif; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox — Blackwear</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen text-white">
 
-<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
-  <h1 class="text-2xl font-bold text-brand">Inbox</h1>
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+<body class="bg-black text-white min-h-screen">
+
+<header class="p-5 bg-[#0b0b0b] flex justify-between items-center shadow-lg">
+  <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
+  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
 </header>
 
-<main class="p-5 max-w-4xl mx-auto space-y-6">
-  <div id="emptyState" class="text-gray-400 text-center">
-    No messages yet.
-  </div>
-
-  <div id="messagesList" class="space-y-5 hidden"></div>
+<main class="p-5 max-w-3xl mx-auto">
+  <div id="inbox" class="space-y-4 text-gray-300">Loading messages...</div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, query, orderBy, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -57,68 +34,84 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const emptyState = document.getElementById("emptyState");
-const messagesList = document.getElementById("messagesList");
+const inboxEl = document.getElementById("inbox");
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    await signInAnonymously(auth);
-    return; // will trigger again
-  }
+// Sign in anonymously
+await signInAnonymously(auth);
+const user = auth.currentUser;
 
-  // Query only messages for this user
-  const q = query(
-    collection(db, "supportMessages"),
-    where("userId", "==", user.uid),
-    orderBy("createdAt", "desc")
-  );
+if (!user) {
+  inboxEl.innerHTML = "<p class='text-red-500'>Auth failed ❌</p>";
+}
 
-  onSnapshot(q, (snap) => {
-    messagesList.innerHTML = "";
+// Load all messages for current user
+async function loadInbox() {
+  inboxEl.innerHTML = "Loading messages...";
 
-    if (snap.empty) {
-      emptyState.classList.remove("hidden");
-      messagesList.classList.add("hidden");
+  try {
+    const q = query(
+      collection(db, "supportMessages"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    inboxEl.innerHTML = "";
+
+    if (snapshot.empty) {
+      inboxEl.innerHTML = "<p>No messages yet.</p>";
       return;
     }
 
-    emptyState.classList.add("hidden");
-    messagesList.classList.remove("hidden");
+    // For each message
+    for (const doc of snapshot.docs) {
+      const msgData = doc.data();
 
-    snap.forEach(doc => {
-      const msg = doc.data();
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-2";
 
-      let repliesHTML = "";
-      if (Array.isArray(msg.replies) && msg.replies.length) {
-        repliesHTML = `<div class="mt-3 space-y-2">`;
-        msg.replies.forEach(reply => {
-          if(reply && reply.trim() !== "") {
-            repliesHTML += `
-              <div class="bg-reply p-3 rounded-lg text-gray-200 text-sm">
-                💬 ${reply}
-              </div>
-            `;
-          }
-        });
-        repliesHTML += `</div>`;
-      }
-
-      const el = document.createElement("div");
-      el.className = "bg-[#111] p-5 rounded-xl border border-gray-700 shadow-lg";
-      el.innerHTML = `
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-semibold text-brand">${msg.name || "User"}</h3>
-          <span class="text-xs text-gray-400">${msg.createdAt?.toDate().toLocaleString() || ""}</span>
-        </div>
-        <p class="text-gray-300">${msg.message || ""}</p>
-        <p class="text-xs text-gray-500 mt-1">${msg.email || ""} | ${msg.phone || ""}</p>
-        ${repliesHTML}
+      msgDiv.innerHTML = `
+        <p class="font-semibold text-orange-500">${msgData.name}</p>
+        <p class="text-sm text-gray-400">${msgData.email}</p>
+        <p class="mt-2">${msgData.message}</p>
+        <div class="replies space-y-2 mt-2"></div>
       `;
 
-      messagesList.appendChild(el);
-    });
-  });
-});
+      inboxEl.appendChild(msgDiv);
+
+      // Load replies subcollection
+      const repliesQ = query(
+        collection(db, `supportMessages/${doc.id}/replies`),
+        orderBy("createdAt", "asc")
+      );
+
+      const repliesSnap = await getDocs(repliesQ);
+      const repliesContainer = msgDiv.querySelector(".replies");
+
+      if (!repliesSnap.empty) {
+        repliesSnap.forEach(replyDoc => {
+          const r = replyDoc.data();
+          const rDiv = document.createElement("div");
+          rDiv.className = r.sender === "admin" 
+            ? "bg-green-700 p-2 rounded text-black" 
+            : "bg-gray-800 p-2 rounded text-white";
+
+          rDiv.innerHTML = `<strong>${r.sender}:</strong> ${r.message}`;
+          repliesContainer.appendChild(rDiv);
+        });
+      } else {
+        repliesContainer.innerHTML = "<p class='text-gray-500 text-sm'>No replies yet.</p>";
+      }
+    }
+
+  } catch (err) {
+    console.error("Inbox error:", err);
+    inboxEl.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+  }
+}
+
+loadInbox();
 </script>
 
 </body>
