@@ -5,32 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox — Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0b0b0b; color: white; font-family: 'Poppins', sans-serif; }
+</style>
 </head>
+<body class="min-h-screen">
 
-<body class="bg-black text-white min-h-screen">
-
-<header class="p-5 bg-[#0b0b0b] flex justify-between items-center">
+<header class="p-5 bg-[#111] flex justify-between items-center shadow-lg">
   <h1 class="text-2xl font-bold text-orange-500">Inbox</h1>
-  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg">Back</a>
+  <a href="index.html" class="bg-orange-500 text-black px-4 py-2 rounded-lg font-semibold">Back</a>
 </header>
 
-<main class="p-5 max-w-3xl mx-auto">
-  <div id="inbox" class="space-y-6 text-gray-300">
-    Loading messages...
-  </div>
+<main class="p-5 max-w-3xl mx-auto space-y-4">
+  <div id="inbox" class="space-y-4 text-gray-300">Loading messages...</div>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -40,78 +35,82 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
 const inbox = document.getElementById("inbox");
 
-// Ensure auth
+// Sign in anonymously
 await signInAnonymously(auth);
 
-try {
-  const ticketsSnap = await getDocs(
-    query(collection(db, "support"), orderBy("createdAt", "desc"))
-  );
-
-  inbox.innerHTML = "";
-
-  if (ticketsSnap.empty) {
-    inbox.innerHTML = "<p>No messages yet.</p>";
-  }
-
-  for (const ticketDoc of ticketsSnap.docs) {
-    const t = ticketDoc.data();
-
-    const ticketDiv = document.createElement("div");
-    ticketDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
-
-    ticketDiv.innerHTML = `
-      <div>
-        <p class="font-semibold text-orange-500">${t.name}</p>
-        <p class="text-sm text-gray-400">${t.email}</p>
-        <p class="mt-2">${t.message}</p>
-      </div>
-      <div class="ml-4 space-y-2 replies text-sm text-gray-400">
-        <p class="italic">Loading replies...</p>
-      </div>
-    `;
-
-    inbox.appendChild(ticketDiv);
-
-    // Load replies
-    const repliesDiv = ticketDiv.querySelector(".replies");
-
-    const repliesSnap = await getDocs(
-      query(
-        collection(db, "support", ticketDoc.id, "replies"),
-        orderBy("createdAt")
-      )
+// Load inbox for current user
+async function loadInbox(user) {
+  inbox.innerHTML = "Loading messages...";
+  try {
+    // Get all support messages for this user
+    const q = query(
+      collection(db, "support"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
     );
 
-    repliesDiv.innerHTML = "";
+    const snap = await getDocs(q);
+    inbox.innerHTML = "";
 
-    if (repliesSnap.empty) {
-      repliesDiv.innerHTML = "<p class='italic'>No replies yet.</p>";
+    if (snap.empty) {
+      inbox.innerHTML = "<p>No messages yet.</p>";
+      return;
     }
 
-    repliesSnap.forEach(replyDoc => {
-      const r = replyDoc.data();
+    // Loop through each support message
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
-      const replyEl = document.createElement("div");
-      replyEl.className =
-        r.sender === "admin"
-          ? "text-right text-orange-400"
-          : "text-left";
-
-      replyEl.innerHTML = `
-        <p>${r.text}</p>
+      // Message content
+      msgDiv.innerHTML = `
+        <p class="font-semibold text-orange-500">${data.name}</p>
+        <p class="text-sm text-gray-400">${data.email}</p>
+        <p class="mt-2">${data.message}</p>
       `;
 
-      repliesDiv.appendChild(replyEl);
-    });
-  }
+      // Create a container for replies
+      const repliesDiv = document.createElement("div");
+      repliesDiv.className = "mt-3 space-y-2 pl-4 border-l border-gray-600";
 
-} catch (err) {
-  console.error(err);
-  inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+      // Load replies for this message
+      const repliesSnap = await getDocs(collection(db, `support/${doc.id}/replies`));
+      if (!repliesSnap.empty) {
+        repliesSnap.forEach(replyDoc => {
+          const r = replyDoc.data();
+          const rDiv = document.createElement("div");
+          rDiv.className = "bg-[#222] p-2 rounded-lg";
+          rDiv.innerHTML = `
+            <p class="text-sm font-semibold">${r.sender === 'admin' ? 'Support' : 'You'}</p>
+            <p class="text-gray-300 text-sm mt-1">${r.message}</p>
+          `;
+          repliesDiv.appendChild(rDiv);
+        });
+      } else {
+        const noReplies = document.createElement("p");
+        noReplies.className = "text-gray-500 text-sm";
+        noReplies.textContent = "No replies yet.";
+        repliesDiv.appendChild(noReplies);
+      }
+
+      msgDiv.appendChild(repliesDiv);
+      inbox.appendChild(msgDiv);
+    }
+
+  } catch (err) {
+    console.error("Inbox error:", err);
+    inbox.innerHTML = "<p class='text-red-500'>Failed to load inbox ❌</p>";
+  }
 }
+
+// Listen for auth state
+onAuthStateChanged(auth, user => {
+  if (user) loadInbox(user);
+});
 </script>
 
 </body>
