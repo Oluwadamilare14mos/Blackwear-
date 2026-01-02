@@ -25,7 +25,9 @@ tailwind.config = {
   <div id="emptyState" class="text-gray-400 text-center">  
     Loading messages...  
   </div>    <div id="messagesList" class="space-y-5 hidden"></div>  
-</main>  <script type="module">  
+</main> 
+  
+  <script type="module">  
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";  
 import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";  
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";  
@@ -49,12 +51,15 @@ onAuthStateChanged(auth, async (user) => {
     return;  
   }  
   
-  const q = query(  
-    collection(db, "support"),  
-    orderBy("createdAt", "desc")  
-  );  
-  
-  onSnapshot(q, (snap) => {  
+   const q = query(
+  collection(db, "support"),
+  where("userId", "==", auth.currentUser.uid),
+  orderBy("createdAt", "desc")
+);
+
+onSnapshot(q, (snap) => {
+  // render inbox
+});
     messagesList.innerHTML = "";  
   
     if (snap.empty) {  
