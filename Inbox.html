@@ -45,7 +45,7 @@ tailwind.config = {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -54,28 +54,37 @@ const firebaseConfig = {
   projectId: "blackwear-14a31"
 };
 
-// Init
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const inbox = document.getElementById("inbox");
+const emptyState = document.getElementById("emptyState");
+const messagesList = document.getElementById("messagesList");
 
-// 🔐 WAIT FOR AUTH
+// 🔐 AUTH FIRST
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     await signInAnonymously(auth);
     return;
   }
 
-  // ✅ AUTH READY — NOW READ SUPPORT
-  onSnapshot(collection(db, "support"), (snap) => {
-    inbox.innerHTML = "";
+  const q = query(
+    collection(db, "support"),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, (snap) => {
+    messagesList.innerHTML = "";
 
     if (snap.empty) {
-      inbox.innerHTML = "<p>No messages yet.</p>";
+      emptyState.classList.remove("hidden");
+      emptyState.textContent = "No messages yet.";
+      messagesList.classList.add("hidden");
       return;
     }
+
+    emptyState.classList.add("hidden");
+    messagesList.classList.remove("hidden");
 
     snap.forEach(doc => {
       const d = doc.data();
@@ -84,12 +93,12 @@ onAuthStateChanged(auth, async (user) => {
       div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
       div.innerHTML = `
-        <p class="text-orange-500 font-semibold">${d.name || "User"}</p>
+        <p class="text-brand font-semibold">${d.name || "User"}</p>
         <p class="text-sm text-gray-400">${d.email || ""}</p>
         <p class="mt-2">${d.message || ""}</p>
       `;
 
-      inbox.appendChild(div);
+      messagesList.appendChild(div);
     });
   });
 });
