@@ -61,7 +61,6 @@ const auth = getAuth(app);
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
-// 🔐 AUTH FIRST
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     await signInAnonymously(auth);
@@ -77,8 +76,8 @@ onAuthStateChanged(auth, async (user) => {
     messagesList.innerHTML = "";
 
     if (snap.empty) {
-      emptyState.classList.remove("hidden");
       emptyState.textContent = "No messages yet.";
+      emptyState.classList.remove("hidden");
       messagesList.classList.add("hidden");
       return;
     }
@@ -86,43 +85,37 @@ onAuthStateChanged(auth, async (user) => {
     emptyState.classList.add("hidden");
     messagesList.classList.remove("hidden");
 
-    onSnapshot(collection(db, "support"), (snap) => {
-  inbox.innerHTML = "";
+    snap.forEach(doc => {
+      const d = doc.data();
 
-  if (snap.empty) {
-    inbox.innerHTML = "<p>No messages yet.</p>";
-    return;
-  }
+      const div = document.createElement("div");
+      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-  snap.forEach(doc => {
-  const d = doc.data();
-
-  const div = document.createElement("div");
-  div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
-
-  let repliesHTML = "";
-  if (Array.isArray(d.replies) && d.replies.length > 0) {
-    repliesHTML = `
-      <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
-        ${d.replies.map(reply => `
-          <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
-            💬 ${reply}
+      let repliesHTML = "";
+      if (Array.isArray(d.replies) && d.replies.length > 0) {
+        repliesHTML = `
+          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
+            ${d.replies.map(r => `
+              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
+                💬 ${r}
+              </div>
+            `).join("")}
           </div>
-        `).join("")}
-      </div>
-    `;
-  }
+        `;
+      }
 
-  div.innerHTML = `
-    <p class="text-brand font-semibold">${d.name || "User"}</p>
-    <p class="text-sm text-gray-400">${d.email || ""}</p>
-    <p class="mt-2 text-gray-200">${d.message || ""}</p>
-    ${repliesHTML}
-  `;
+      div.innerHTML = `
+        <p class="text-brand font-semibold">${d.name || "User"}</p>
+        <p class="text-sm text-gray-400">${d.email || ""}</p>
+        <p class="mt-2 text-gray-200">${d.message || ""}</p>
+        ${repliesHTML}
+      `;
 
-  messagesList.appendChild(div);
+      messagesList.appendChild(div);
+    });
+  });
 });
-      
+  
 </script>
 </body>
 </html>
