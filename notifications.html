@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwear — Notifications</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: "#ff7f00",
+          dark: "#0b0b0b",
+          unread: "#1f2937"
+        },
+        fontFamily: { poppins: ["Poppins", "sans-serif"] },
+      },
+    },
+  };
+</script>
+
+<style>
+  body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+  .notification-bell {
+    position: relative;
+  }
+  .notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff7f00;
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+</head>
+
+<body class="min-h-screen text-white">
+
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Blackwear</h1>
+  <div class="flex items-center space-x-4">
+    <a href="inbox.html" class="bg-brand text-black px-4 py-2 rounded-lg font-semibold">Inbox</a>
+    <div class="notification-bell cursor-pointer">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      <div id="notificationCount" class="notification-count hidden">0</div>
+    </div>
+  </div>
+</header>
+
+<main class="p-5 max-w-4xl mx-auto space-y-6">
+  <div id="emptyState" class="text-gray-400 text-center">Loading notifications...</div>
+  <div id="notificationsList" class="space-y-4 hidden"></div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
+
+// Initialize
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const emptyState = document.getElementById("emptyState");
+const notificationsList = document.getElementById("notificationsList");
+const notificationCountEl = document.getElementById("notificationCount");
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    await signInAnonymously(auth);
+    return;
+  }
+
+  // Listen for notifications for current user
+  const q = query(
+    collection(db, "notifications"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, async (snap) => {
+    notificationsList.innerHTML = "";
+
+    if (snap.empty) {
+      emptyState.classList.remove("hidden");
+      emptyState.textContent = "No notifications yet.";
+      notificationsList.classList.add("hidden");
+      notificationCountEl.classList.add("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+    notificationsList.classList.remove("hidden");
+
+    let unreadCount = 0;
+
+    for (const docSnap of snap.docs) {
+      const n = docSnap.data();
+
+      const div = document.createElement("div");
+      div.className = `p-4 rounded-lg border border-gray-700 ${n.read ? "" : "bg-unread"}`;
+      div.innerHTML = `
+        <p class="text-gray-200">${n.message}</p>
+        <p class="text-xs text-gray-400 mt-1">${n.createdAt?.toDate().toLocaleString() || ""}</p>
+        <a href="${n.link}" class="text-sm text-brand mt-2 inline-block underline">View</a>
+      `;
+
+      notificationsList.appendChild(div);
+
+      // Count unread notifications
+      if (!n.read) unreadCount++;
+
+      // Mark as read automatically
+      if (!n.read) {
+        await updateDoc(doc(db, "notifications", docSnap.id), { read: true });
+      }
+    }
+
+    // Update bell counter
+    if (unreadCount > 0) {
+      notificationCountEl.textContent = unreadCount;
+      notificationCountEl.classList.remove("hidden");
+    } else {
+      notificationCountEl.classList.add("hidden");
+    }
+  });
+});
+</script>
+
+</body>
+</html>
