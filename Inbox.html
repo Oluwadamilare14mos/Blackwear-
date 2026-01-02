@@ -86,35 +86,27 @@ onAuthStateChanged(auth, async (user) => {
     emptyState.classList.add("hidden");
     messagesList.classList.remove("hidden");
 
-    snap.forEach(doc => {
-      const d = doc.data();
+    onSnapshot(collection(db, "support"), (snap) => {
+  inbox.innerHTML = "";
 
-      const div = document.createElement("div");
-      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
+  if (snap.empty) {
+    inbox.innerHTML = "<p>No messages yet.</p>";
+    return;
+  }
 
-      // 🔁 BUILD REPLIES
-      let repliesHTML = "";
-      if (Array.isArray(d.replies) && d.replies.length > 0) {
-        repliesHTML = `
-          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
-            ${d.replies.map(reply => `
-              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
-                💬 ${reply}
-              </div>
-            `).join("")}
-          </div>
-        `;
-      }
+  snap.forEach(doc => {
+    const d = doc.data();
 
-      div.innerHTML = `
-        <p class="text-brand font-semibold">${d.name || "User"}</p>
-        <p class="text-sm text-gray-400">${d.email || ""}</p>
-        <p class="mt-2 text-gray-200">${d.message || ""}</p>
-        ${repliesHTML}
-      `;
+    const div = document.createElement("div");
+    div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg";
 
-      messagesList.appendChild(div);
-    });
+    div.innerHTML = `
+      <p class="text-orange-500 font-semibold">${d.name || "User"}</p>
+      <p class="text-sm text-gray-400">${d.email || ""}</p>
+      <p class="mt-2">${d.message || ""}</p>
+    `;
+
+    inbox.appendChild(div);
   });
 });
 </script>
