@@ -60,6 +60,7 @@ onAuthStateChanged(auth, async (user) => {
 onSnapshot(q, (snap) => {
   // render inbox
 });
+  messagesList.innerHTML = "";  
   
     if (snap.empty) {  
       emptyState.textContent = "No messages yet.";  
