@@ -44,51 +44,64 @@ const auth = getAuth(app);
 
 const messagesList = document.getElementById("messagesList");
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) await signInAnonymously(auth);
+const q = query(
+  collection(db, "support"),
+  orderBy("createdAt", "desc")
+);
 
-  // 🔹 Query only current user's messages
-  const q = query(
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html"; // force login if not signed in
+    return;
+  }
+
+  // Only load messages belonging to this user
+  const userQuery = query(
     collection(db, "support"),
-    where("userId", "==", auth.currentUser.uid),
+    where("userId", "==", user.uid),
     orderBy("createdAt", "desc")
   );
 
-  onSnapshot(q, async (snap) => {
+  onSnapshot(userQuery, (snap) => {
     messagesList.innerHTML = "";
 
     if (snap.empty) {
-      messagesList.innerHTML = "<p class='text-gray-400'>No messages yet.</p>";
+      emptyState.textContent = "No messages yet.";
+      emptyState.classList.remove("hidden");
+      messagesList.classList.add("hidden");
       return;
     }
 
-    for (const doc of snap.docs) {
-      const msg = doc.data();
+    emptyState.classList.add("hidden");
+    messagesList.classList.remove("hidden");
 
+    snap.forEach(doc => {
+      const d = doc.data();
       const div = document.createElement("div");
-      div.className = "bg-[#111] p-4 rounded-lg mb-4";
+      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-      // 🔹 Load replies subcollection
-      const repliesSnap = await getDocs(collection(db, `support/${doc.id}/replies`));
       let repliesHTML = "";
-      repliesSnap.forEach(replyDoc => {
-        const reply = replyDoc.data();
-        repliesHTML += `
-          <div class="bg-reply p-2 rounded text-sm text-gray-200 mt-2">
-            💬 ${reply.text || reply.message || ""}
+      if (Array.isArray(d.replies) && d.replies.length > 0) {
+        repliesHTML = `
+          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
+            ${d.replies.map(r => `
+              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
+                💬 ${r}
+              </div>
+            `).join("")}
           </div>
         `;
-      });
+      }
 
       div.innerHTML = `
-        <p class="text-brand font-semibold">${msg.name || "User"}</p>
-        <p class="text-sm text-gray-400">${msg.email || ""}</p>
-        <p class="mt-2">${msg.message}</p>
+        <p class="text-brand font-semibold">${d.name || "User"}</p>
+        <p class="text-sm text-gray-400">${d.email || ""}</p>
+        <p class="mt-2 text-gray-200">${d.message || ""}</p>
         ${repliesHTML}
       `;
 
       messagesList.appendChild(div);
-    }
+    });
   });
 });
     
