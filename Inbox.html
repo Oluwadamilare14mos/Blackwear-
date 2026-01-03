@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Inbox — Blackwear</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -42,16 +41,15 @@ const auth = getAuth(app);
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
-// Auth listener
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    await signInAnonymously(auth);
-    return;
-  }
+  if (!user) await signInAnonymously(auth);
+
+  // Wait until user is ready
+  const uid = auth.currentUser.uid;
 
   const q = query(
     collection(db, "support"),
-    where("userId", "==", user.uid),
+    where("userId", "==", uid),
     orderBy("createdAt", "desc")
   );
 
