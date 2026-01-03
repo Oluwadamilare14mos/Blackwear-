@@ -4,29 +4,46 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Inbox — Blackwear</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-body { background: #0b0b0b; font-family: Poppins, sans-serif; }
+  body { background:#0b0b0b; font-family:Poppins,sans-serif; }
 </style>
 </head>
+
 <body class="min-h-screen text-white">
 
 <header class="p-5 bg-[#0b0b0b] shadow-lg flex justify-between items-center">
   <h1 class="text-2xl font-bold text-[#ff7f00]">Inbox</h1>
-  <a href="index.html" class="bg-[#ff7f00] text-black px-4 py-2 rounded-lg font-semibold">Back</a>
+  <a href="index.html"
+     class="bg-[#ff7f00] text-black px-4 py-2 rounded-lg font-semibold">
+     Back
+  </a>
 </header>
 
 <main class="p-5 max-w-4xl mx-auto space-y-6">
-  <div id="emptyState" class="text-gray-400 text-center">Loading messages...</div>
+  <div id="emptyState" class="text-gray-400 text-center">
+    Loading messages...
+  </div>
+
   <div id="messagesList" class="space-y-5 hidden"></div>
 </main>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import {
+  getFirestore, collection, query, where, orderBy, onSnapshot
+} from
+  "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signInAnonymously
+} from
+  "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+/* Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -40,12 +57,14 @@ const auth = getAuth(app);
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
-onAuthStateChanged(auth, (user) => {
+/* Auth */
+onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "login.html";
+    await signInAnonymously(auth);
     return;
   }
 
+  /* 🔐 USER-SAFE QUERY */
   const q = query(
     collection(db, "support"),
     where("userId", "==", user.uid),
@@ -68,29 +87,37 @@ onAuthStateChanged(auth, (user) => {
     snap.forEach(doc => {
       const d = doc.data();
       const div = document.createElement("div");
-      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-      const repliesHTML = Array.isArray(d.replies) ? d.replies.map(r => `
-        <div class="bg-[#1f2937] p-3 rounded-lg text-sm text-gray-200">
-          💬 ${r || ""}
-        </div>
-      `).join("") : "";
+      div.className =
+        "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
+
+      const replies = Array.isArray(d.replies)
+        ? d.replies.map(r => `
+            <div class="bg-[#1f2937] p-3 rounded-lg text-sm text-gray-200">
+              💬 ${r}
+            </div>
+          `).join("")
+        : "";
 
       div.innerHTML = `
         <p class="text-[#ff7f00] font-semibold">${d.name || "User"}</p>
         <p class="text-sm text-gray-400">${d.email || ""}</p>
         <p class="mt-2 text-gray-200">${d.message || ""}</p>
-        ${repliesHTML ? `<div class="mt-3 border-t border-gray-700 pt-3 space-y-2">${repliesHTML}</div>` : ""}
+        ${replies ? `
+          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
+            ${replies}
+          </div>` : ""}
       `;
 
       messagesList.appendChild(div);
     });
   }, (err) => {
+    console.error(err);
     emptyState.textContent = "Failed to load messages ❌";
     emptyState.classList.remove("hidden");
-    console.error("Firestore error:", err);
   });
 });
 </script>
+
 </body>
 </html>
