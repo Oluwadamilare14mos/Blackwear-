@@ -35,6 +35,12 @@ body { background: #0b0b0b; font-family: Poppins, sans-serif; }
   <div id="messagesList" class="space-y-5 hidden"></div>
 </main>
 
+<div id="emptyState" class="text-gray-400 text-center">
+  Loading messages...
+</div>
+
+<div id="messagesList" class="space-y-5 hidden"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -54,15 +60,11 @@ const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    await signInAnonymously(auth);
-    return;
-  }
+  if (!user) await signInAnonymously(auth);
 
-  // 🔐 Only fetch messages for this user
   const q = query(
     collection(db, "support"),
-    where("userId", "==", user.uid),
+    where("userId", "==", auth.currentUser.uid),
     orderBy("createdAt", "desc")
   );
 
@@ -85,34 +87,25 @@ onAuthStateChanged(auth, async (user) => {
       const div = document.createElement("div");
       div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-      // Safely build replies
-      let repliesHTML = "";
-      if (Array.isArray(d.replies) && d.replies.length > 0) {
-        repliesHTML = `
-          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
-            ${d.replies.map(r => `
-              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
-                💬 ${r || ""}
-              </div>
-            `).join("")}
-          </div>
-        `;
-      }
+      const repliesHTML = Array.isArray(d.replies) ? d.replies.map(r => `
+        <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
+          💬 ${r || ""}
+        </div>
+      `).join("") : "";
 
       div.innerHTML = `
         <p class="text-brand font-semibold">${d.name || "User"}</p>
         <p class="text-sm text-gray-400">${d.email || ""}</p>
         <p class="mt-2 text-gray-200">${d.message || ""}</p>
-        ${repliesHTML}
+        ${repliesHTML ? `<div class="mt-3 border-t border-gray-700 pt-3 space-y-2">${repliesHTML}</div>` : ""}
       `;
 
       messagesList.appendChild(div);
     });
   }, (err) => {
-    console.error("Error fetching inbox:", err);
     emptyState.textContent = "Failed to load messages ❌";
     emptyState.classList.remove("hidden");
-    messagesList.classList.add("hidden");
+    console.error("Firestore error:", err);
   });
 });
 </script>
