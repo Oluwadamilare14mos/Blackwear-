@@ -435,6 +435,31 @@ async function addToCart(productId, name, price, image){
     });
   }
   initAuthAndLoad();
+
+   // 🔔 NOTIFICATION BADGE LOGIC (ADD THIS ONLY)
+const badge = document.getElementById("notifCount");
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    await signInAnonymously(auth);
+    return;
+  }
+
+  const notifQuery = query(
+    collection(db, "notifications"),
+    where("userId", "==", user.uid),
+    where("read", "==", false)
+  );
+
+  onSnapshot(notifQuery, (snap) => {
+    if (snap.empty) {
+      badge.classList.add("hidden");
+    } else {
+      badge.textContent = snap.size;
+      badge.classList.remove("hidden");
+    }
+  });
+});
     </script>
 </body>
 </html>
