@@ -12,7 +12,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+          colors: { brand: "#ff7f00", dark: "#0b0b0b", reply: "#1f2937" },
           fontFamily: { poppins: ["Poppins", "sans-serif"] },
         },
       },
@@ -33,15 +33,7 @@
 
 <main class="p-5 max-w-4xl mx-auto space-y-8">
 
-  <!-- Intro -->
-  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
-    <h2 class="text-xl font-semibold text-brand mb-2">How can we help you?</h2>
-    <p class="text-gray-400 text-sm">
-      Our support team is here to help with orders, payments, and delivery issues.
-    </p>
-  </section>
-
-  <!-- Support Form -->
+  <!-- Send Message Form -->
   <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
     <h2 class="text-xl font-semibold text-brand mb-4">Send a Message</h2>
 
@@ -60,80 +52,127 @@
       </button>
     </form>
 
-    <p id="statusMsg" class="text-sm mt-3 text-center"></p>
+    <p id="statusMsg" class="text-sm mt-3 text-center text-gray-400"> </p>
+  </section>
+
+  <!-- User's Messages -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-4">Your Messages</h2>
+    <div id="messagesList" class="space-y-5">
+      Loading messages...
+    </div>
   </section>
 
 </main>
 
 <footer class="text-center text-gray-500 text-xs p-6">
-  © 2025 Blackwear. All rights reserved.
+  © 2026 Blackwear. All rights reserved.
 </footer>
 
 <!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-<script>
-  // Initialize Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
-  };
-  firebase.initializeApp(firebaseConfig);
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
 
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-  const form = document.getElementById("supportForm");
-  const status = document.getElementById("statusMsg");
-  const submitBtn = form.querySelector("button");
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  // Disable submit until auth is ready
-  submitBtn.disabled = true;
+const form = document.getElementById("supportForm");
+const status = document.getElementById("statusMsg");
+const messagesList = document.getElementById("messagesList");
 
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      try {
-        const anonUser = await auth.signInAnonymously();
-        console.log("✅ Signed in anonymously:", anonUser.user.uid);
-        return;
-      } catch (err) {
-        console.error("Auth error:", err);
-        status.textContent = "Auth error ❌";
-        status.className = "text-sm mt-3 text-red-500 text-center";
-        return;
-      }
+// Wait for auth
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    await signInAnonymously(auth);
+    return;
+  }
+
+  // Enable form
+  form.querySelector("button").disabled = false;
+
+  // Handle form submission
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    status.textContent = "Sending message...";
+    status.className = "text-sm mt-3 text-gray-400 text-center";
+
+    try {
+      await addDoc(collection(db, "support"), {
+        userId: user.uid,
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        message: form.message.value.trim(),
+        replies: [],
+        createdAt: serverTimestamp(),
+        source: "support"
+      });
+
+      status.textContent = "Message sent successfully ✅";
+      status.className = "text-sm mt-3 text-green-500 text-center";
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Failed to send message ❌";
+      status.className = "text-sm mt-3 text-red-500 text-center";
+    }
+  });
+
+  // Show user's messages only
+  const q = query(
+    collection(db, "support"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, (snap) => {
+    messagesList.innerHTML = "";
+    if (snap.empty) {
+      messagesList.textContent = "No messages yet.";
+      return;
     }
 
-    console.log("✅ Auth ready:", user.uid);
-    submitBtn.disabled = false;
+    snap.forEach(doc => {
+      const d = doc.data();
+      const div = document.createElement("div");
+      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      status.textContent = "Sending message...";
-      status.className = "text-sm mt-3 text-gray-400 text-center";
-
-      try {
-        await db.collection("support").add({
-          userId: user.uid,
-          name: document.getElementById("name").value.trim(),
-          email: document.getElementById("email").value.trim(),
-          phone: document.getElementById("phone").value.trim(),
-          message: document.getElementById("message").value.trim(),
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        status.textContent = "Message sent successfully ✅";
-        status.className = "text-sm mt-3 text-green-500 text-center";
-        form.reset();
-      } catch (err) {
-        console.error("Firestore error:", err);
-        status.textContent = "Failed to send message ❌";
-        status.className = "text-sm mt-3 text-red-500 text-center";
+      let repliesHTML = "";
+      if (Array.isArray(d.replies) && d.replies.length > 0) {
+        repliesHTML = `
+          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">
+            ${d.replies.map(r => `
+              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
+                💬 ${r}
+              </div>
+            `).join("")}
+          </div>
+        `;
       }
+
+      div.innerHTML = `
+        <p class="text-brand font-semibold">${d.name || "User"}</p>
+        <p class="text-sm text-gray-400">${d.email || ""}</p>
+        <p class="mt-2 text-gray-200">${d.message || ""}</p>
+        ${repliesHTML}
+      `;
+
+      messagesList.appendChild(div);
     });
   });
+});
 </script>
+
 </body>
 </html>
