@@ -92,9 +92,9 @@ const status = document.getElementById("statusMsg");
 const messagesList = document.getElementById("messagesList");
 
 // Wait for auth
-onAuthStateChanged(auth, async (user) => {
+auth.onAuthStateChanged((user) => {
   if (!user) {
-    await signInAnonymously(auth);
+    window.location.href = "login.html";
     return;
   }
 
