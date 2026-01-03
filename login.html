@@ -1,1 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login — Blackwear</title>
+<script type="module">
+import { auth } from "./auth.js";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+window.login = async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  await signInWithEmailAndPassword(auth, email, password);
+  location.href = "index.html";
+};
+
+window.register = async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  await createUserWithEmailAndPassword(auth, email, password);
+  location.href = "index.html";
+};
+</script>
+</head>
+<body>
+<input id="emailInput" placeholder="Email">
+<input id="passwordInput" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="register()">Register</button>
+</body>
+</html>
