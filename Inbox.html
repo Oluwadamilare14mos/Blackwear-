@@ -1,4 +1,5 @@
-<!DOCTYPE html>  <html lang="en">  
+<!DOCTYPE html> 
+<html lang="en">  
 <head>  
 <meta charset="UTF-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
@@ -25,78 +26,78 @@ tailwind.config = {
   <div id="emptyState" class="text-gray-400 text-center">  
     Loading messages...  
   </div>    <div id="messagesList" class="space-y-5 hidden"></div>  
-</main>  <script type="module">  
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";  
-import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";  
-import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";  
-  
-const firebaseConfig = {  
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",  
-  authDomain: "blackwear-14a31.firebaseapp.com",  
-  projectId: "blackwear-14a31"  
-};  
-  
-const app = initializeApp(firebaseConfig);  
-const db = getFirestore(app);  
-const auth = getAuth(app);  
-  
-const emptyState = document.getElementById("emptyState");  
-const messagesList = document.getElementById("messagesList");  
-  
-onAuthStateChanged(auth, async (user) => {  
-  if (!user) {  
-    await signInAnonymously(auth);  
-    return;  
-  }  
-  
-  const q = query(  
-    collection(db, "support"),  
-    orderBy("createdAt", "desc")  
-  );  
-  
-  onSnapshot(q, (snap) => {  
-    messagesList.innerHTML = "";  
-  
-    if (snap.empty) {  
-      emptyState.textContent = "No messages yet.";  
-      emptyState.classList.remove("hidden");  
-      messagesList.classList.add("hidden");  
-      return;  
-    }  
-  
-    emptyState.classList.add("hidden");  
-    messagesList.classList.remove("hidden");  
-  
-    snap.forEach(doc => {  
-      const d = doc.data();  
-  
-      const div = document.createElement("div");  
-      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";  
-  
-      let repliesHTML = "";  
-      if (Array.isArray(d.replies) && d.replies.length > 0) {  
-        repliesHTML = `  
-          <div class="mt-3 border-t border-gray-700 pt-3 space-y-2">  
-            ${d.replies.map(r => `  
-              <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">  
-                💬 ${r}  
-              </div>  
-            `).join("")}  
-          </div>  
-        `;  
-      }  
-  
-      div.innerHTML = `  
-        <p class="text-brand font-semibold">${d.name || "User"}</p>  
-        <p class="text-sm text-gray-400">${d.email || ""}</p>  
-        <p class="mt-2 text-gray-200">${d.message || ""}</p>  
-        ${repliesHTML}  
-      `;  
-  
-      messagesList.appendChild(div);  
-    });  
-  });  
-});  
-    
-</script>  </body>  
+</main> 
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const emptyState = document.getElementById("emptyState");
+const messagesList = document.getElementById("messagesList");
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    emptyState.textContent = "Please log in to view your inbox.";
+    return;
+  }
+
+  const q = query(
+    collection(db, "support"),
+    where("userId", "==", user.uid),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, (snap) => {
+    messagesList.innerHTML = "";
+
+    if (snap.empty) {
+      emptyState.textContent = "No messages yet.";
+      emptyState.classList.remove("hidden");
+      messagesList.classList.add("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+    messagesList.classList.remove("hidden");
+
+    snap.forEach(doc => {
+      const d = doc.data();
+      const div = document.createElement("div");
+
+      div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
+
+      const replies = Array.isArray(d.replies)
+        ? d.replies.map(r => `
+            <div class="bg-[#1f2937] p-3 rounded-lg text-sm">
+              💬 ${r}
+            </div>
+          `).join("")
+        : "";
+
+      div.innerHTML = `
+        <p class="text-[#ff7f00] font-semibold">${d.name}</p>
+        <p class="text-sm text-gray-400">${d.email}</p>
+        <p class="mt-2">${d.message}</p>
+        ${replies ? `<div class="mt-3 space-y-2">${replies}</div>` : ""}
+      `;
+
+      messagesList.appendChild(div);
+    });
+  }, (err) => {
+    emptyState.textContent = "Failed to load messages ❌";
+    console.error(err);
+  });
+});
+  </script>
+ </body>  
 </html>
