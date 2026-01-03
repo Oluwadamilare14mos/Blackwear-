@@ -61,14 +61,12 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // 🔹 Query messages for the current user
   const q = query(
     collection(db, "support"),
-    where("userId", "==", user.uid),
+    where("userId", "==", user.uid), // use user.uid, NOT auth.currentUser.uid
     orderBy("createdAt", "desc")
   );
 
-  // 🔹 Real-time listener
   onSnapshot(q, (snap) => {
     messagesList.innerHTML = "";
 
@@ -84,11 +82,9 @@ onAuthStateChanged(auth, async (user) => {
 
     snap.forEach(doc => {
       const d = doc.data();
-
       const div = document.createElement("div");
       div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
-      // Render replies if any
       const repliesHTML = Array.isArray(d.replies) ? d.replies.map(r => `
         <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
           💬 ${r || ""}
