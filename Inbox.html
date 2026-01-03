@@ -27,7 +27,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebas
 import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -44,7 +43,6 @@ const messagesList = document.getElementById("messagesList");
 onAuthStateChanged(auth, async (user) => {
   if (!user) await signInAnonymously(auth);
 
-  // Wait until user is ready
   const uid = auth.currentUser.uid;
 
   const q = query(
