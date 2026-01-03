@@ -35,17 +35,12 @@ body { background: #0b0b0b; font-family: Poppins, sans-serif; }
   <div id="messagesList" class="space-y-5 hidden"></div>
 </main>
 
-<div id="emptyState" class="text-gray-400 text-center">
-  Loading messages...
-</div>
-
-<div id="messagesList" class="space-y-5 hidden"></div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+// 🔹 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
@@ -59,15 +54,21 @@ const auth = getAuth(app);
 const emptyState = document.getElementById("emptyState");
 const messagesList = document.getElementById("messagesList");
 
+// 🔹 Listen for auth state
 onAuthStateChanged(auth, async (user) => {
-  if (!user) await signInAnonymously(auth);
+  if (!user) {
+    await signInAnonymously(auth);
+    return;
+  }
 
+  // 🔹 Query messages for the current user
   const q = query(
     collection(db, "support"),
-    where("userId", "==", auth.currentUser.uid),
+    where("userId", "==", user.uid),
     orderBy("createdAt", "desc")
   );
 
+  // 🔹 Real-time listener
   onSnapshot(q, (snap) => {
     messagesList.innerHTML = "";
 
@@ -87,6 +88,7 @@ onAuthStateChanged(auth, async (user) => {
       const div = document.createElement("div");
       div.className = "bg-[#111] border border-gray-700 p-4 rounded-lg space-y-3";
 
+      // Render replies if any
       const repliesHTML = Array.isArray(d.replies) ? d.replies.map(r => `
         <div class="bg-reply p-3 rounded-lg text-sm text-gray-200">
           💬 ${r || ""}
