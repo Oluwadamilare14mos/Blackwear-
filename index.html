@@ -181,6 +181,7 @@
 
    // ------------------ AUTH CHECK ------------------
   auth.onAuthStateChanged((user) => {
+  console.log("AUTH STATE:", user);
   if (!user) {
     window.location.replace("entry.html");
   } else {
