@@ -179,6 +179,17 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+   // ------------------ AUTH CHECK ------------------
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      // Redirect to entry page if not logged in
+      window.location.href = "entry.html";
+    } else {
+      // Optional: You can get user info here if needed
+      console.log("Logged in user:", user.email);
+    }
+  });
+   
   // Helpers
   function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
   function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
