@@ -422,19 +422,7 @@ async function addToCart(productId, name, price, image){
     const q = document.getElementById('searchInput').value.toLowerCase();
     displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));
   }
-
-  // Auth and init
-  async function initAuthAndLoad() {
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        try { await auth.signInAnonymously(); } catch(e){ console.error('Auth error', e); }
-      } else {
-        loadProductsFromFirestore();
-        loadCartCountForUser();
-      }
-    });
-  }
-  initAuthAndLoad();
+   
     </script>
 </body>
 </html>
