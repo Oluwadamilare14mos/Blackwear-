@@ -1,37 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Welcome to Blackwear</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome | Blackwear</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top, #ff7f00 0%, #000 40%);
+    }
+  </style>
 </head>
 
-<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen">
+<body class="min-h-screen flex items-center justify-center text-white">
 
-  <h1 class="text-4xl font-bold text-orange-500 mb-10">
-    Welcome to Blackwear
-  </h1>
+  <div class="bg-black/80 backdrop-blur-xl border border-orange-500/20 rounded-2xl shadow-2xl p-10 max-w-md w-full text-center">
 
-  <div class="space-x-4">
-    <a href="signup.html"
-       class="bg-orange-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-orange-600">
-       Sign Up
-    </a>
+    <h1 class="text-4xl font-bold text-orange-500 mb-3">
+      Blackwear
+    </h1>
 
-    <a href="login.html"
-       class="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600">
-       Login
-    </a>
+    <p class="text-gray-400 mb-8">
+      Premium fashion for every style
+    </p>
+
+    <div class="flex flex-col gap-4">
+      <a
+        href="signup.html"
+        class="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-3 rounded-xl transition"
+      >
+        Create Account
+      </a>
+
+      <a
+        href="login.html"
+        class="bg-gray-800 hover:bg-gray-700 border border-gray-600 font-semibold py-3 rounded-xl transition"
+      >
+        Login
+      </a>
+    </div>
+
+    <p class="text-xs text-gray-500 mt-8">
+      © 2025 Blackwear. All rights reserved.
+    </p>
   </div>
 
+  <!-- Firebase Logic -->
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
       authDomain: "blackwear-14a31.firebaseapp.com",
@@ -41,7 +63,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // Redirect logged-in users away from entry page
+    // Redirect if already logged in
     auth.onAuthStateChanged((user) => {
       if (user) {
         window.location.replace("index.html");
