@@ -12,5 +12,14 @@
     <a href="signup.html" class="bg-orange-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-orange-600">Sign Up</a>
     <a href="login.html" class="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600">Login</a>
   </div>
+
+  <script>
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      // Already logged in → go to main site
+      window.location.replace("index.html");
+    }
+  });
+  </script>
 </body>
 </html>
