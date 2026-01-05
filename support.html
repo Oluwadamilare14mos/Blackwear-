@@ -1,50 +1,75 @@
-<!DOCTYPE html>  <html lang="en">  
-<head>  
-  <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
-  <title>Support — Blackwear</title>    <!-- Fonts & Tailwind -->    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>  
-  <script src="https://cdn.tailwindcss.com"></script>  
-  <script>  
-    tailwind.config = {  
-      theme: {  
-        extend: {  
-          colors: { brand: "#ff7f00", dark: "#0b0b0b" },  
-          fontFamily: { poppins: ["Poppins", "sans-serif"] },  
-        },  
-      },  
-    };  
-  </script>    <style>  
-    body { background:#0b0b0b; font-family:Poppins, sans-serif; }  
-  </style>  </head>  <body class="min-h-screen text-white">  <header class="p-5 bg-dark shadow-lg flex justify-between items-center">  
-  <h1 class="text-2xl font-bold text-brand">Support</h1>  
-  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>  
-</header>  <main class="p-5 max-w-4xl mx-auto space-y-8">    <!-- Intro -->    <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">  
-    <h2 class="text-xl font-semibold text-brand mb-2">How can we help you?</h2>  
-    <p class="text-gray-400 text-sm">  
-      Our support team is here to help with orders, payments, and delivery issues.  
-    </p>  
-  </section>    <!-- Support Form -->    <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">  
-    <h2 class="text-xl font-semibold text-brand mb-4">Send a Message</h2>  <form id="supportForm" class="space-y-4">  
-  <input id="name" type="text" placeholder="Your Name" required  
-    class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">  
-  <input id="email" type="email" placeholder="Your Email" required  
-    class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">  
-  <input id="phone" type="tel" placeholder="Phone Number"  
-    class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">  
-  <textarea id="message" rows="4" placeholder="Describe your issue..." required  
-    class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"></textarea>  
-  <button type="submit"  
-    class="w-full bg-brand text-black p-3 rounded-lg font-semibold hover:bg-orange-500 transition">  
-    Submit Request  
-  </button>  
-</form>  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Support — Blackwear</title>
 
-<p id="statusMsg" class="text-sm mt-3 text-center"></p>
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: "#ff7f00", dark: "#0b0b0b" },
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+        },
+      },
+    };
+  </script>
 
-  </section>  </main>  <footer class="text-center text-gray-500 text-xs p-6">  
-  © 2025 Blackwear. All rights reserved.  
-  </footer>
-    <!-- Firebase -->
+  <style>
+    body { background:#0b0b0b; font-family:Poppins, sans-serif; }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+<header class="p-5 bg-dark shadow-lg flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-brand">Support</h1>
+  <a href="index.html" class="bg-brand text-black px-4 py-2 rounded-lg text-sm font-semibold">Back</a>
+</header>
+
+<main class="p-5 max-w-4xl mx-auto space-y-8">
+
+  <!-- Intro -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-2">How can we help you?</h2>
+    <p class="text-gray-400 text-sm">
+      Our support team is here to help with orders, payments, and delivery issues.
+    </p>
+  </section>
+
+  <!-- Support Form -->
+  <section class="bg-[#111] p-6 rounded-xl border border-gray-700 shadow-lg">
+    <h2 class="text-xl font-semibold text-brand mb-4">Send a Message</h2>
+
+    <form id="supportForm" class="space-y-4">
+      <input id="name" type="text" placeholder="Your Name" required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
+      <input id="email" type="email" placeholder="Your Email" required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
+      <input id="phone" type="tel" placeholder="Phone Number"
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand">
+      <textarea id="message" rows="4" placeholder="Describe your issue..." required
+        class="w-full bg-dark border border-gray-700 rounded-lg p-3 text-sm outline-none focus:border-brand"></textarea>
+      <button type="submit"
+        class="w-full bg-brand text-black p-3 rounded-lg font-semibold hover:bg-orange-500 transition">
+        Submit Request
+      </button>
+    </form>
+
+    <p id="statusMsg" class="text-sm mt-3 text-center"></p>
+  </section>
+
+</main>
+
+<footer class="text-center text-gray-500 text-xs p-6">
+  © 2025 Blackwear. All rights reserved.
+</footer>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -107,9 +132,16 @@
       try {
         // Save to Firestore
         await db.collection("support").add(formData);
+        console.log("✅ Firestore saved");
 
         // Send Email via EmailJS
-        await emailjs.send("service_vaclqbc", "template_f8lklm7", formData);
+        await emailjs.send("service_vaclqbc", "template_f8lklm7", {
+          from_name: formData.name,
+          from_email: formData.email,
+          phone: formData.phone,
+          message: formData.message
+        });
+        console.log("✅ Email sent");
 
         status.textContent = "Message sent successfully ✅";
         status.className = "text-sm mt-3 text-green-500 text-center";
@@ -122,5 +154,5 @@
     });
   });
 </script>
-  </body>  
+</body>
 </html>
