@@ -181,15 +181,13 @@
 
    // ------------------ AUTH CHECK ------------------
   auth.onAuthStateChanged((user) => {
-    if (!user) {
-      // Not logged in → send to login/signup page
-      window.location.replace("entry.html");
-    } else {
-      // Logged in → load site
-      loadProductsFromFirestore();
-      loadCartCountForUser();
-    }
-  });
+  if (!user) {
+    window.location.replace("entry.html");
+  } else {
+    loadProductsFromFirestore();
+    loadCartCountForUser();
+  }
+});
    
   // Helpers
   function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
