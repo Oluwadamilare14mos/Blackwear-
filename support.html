@@ -43,65 +43,84 @@
 
   </section>  </main>  <footer class="text-center text-gray-500 text-xs p-6">  
   © 2025 Blackwear. All rights reserved.  
-</footer>  <!-- Firebase -->  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>  <script>  
-  // Initialize Firebase  
-  const firebaseConfig = {  
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",  
-    authDomain: "blackwear-14a31.firebaseapp.com",  
-    projectId: "blackwear-14a31"  
-  };  
-  firebase.initializeApp(firebaseConfig);  
-  
-  const db = firebase.firestore();  
-  const auth = firebase.auth();  
-  const form = document.getElementById("supportForm");  
-  const status = document.getElementById("statusMsg");  
-  const submitBtn = form.querySelector("button");  
-  
-  // Disable submit until auth is ready  
-  submitBtn.disabled = true;  
-  
-  auth.onAuthStateChanged(async (user) => {  
-    if (!user) {  
-      try {  
-        const anonUser = await auth.signInAnonymously();  
-        console.log("✅ Signed in anonymously:", anonUser.user.uid);  
-        return;  
-      } catch (err) {  
-        console.error("Auth error:", err);  
-        status.textContent = "Auth error ❌";  
-        status.className = "text-sm mt-3 text-red-500 text-center";  
-        return;  
-      }  
-    }  
-  
-    console.log("✅ Auth ready:", user.uid);  
-    submitBtn.disabled = false;  
-  
-    form.addEventListener("submit", async (e) => {  
-      e.preventDefault();  
-      status.textContent = "Sending message...";  
-      status.className = "text-sm mt-3 text-gray-400 text-center";  
-  
-      try {  
-        await db.collection("support").add({  
-          userId: user.uid,  
-          name: document.getElementById("name").value.trim(),  
-          email: document.getElementById("email").value.trim(),  
-          phone: document.getElementById("phone").value.trim(),  
-          message: document.getElementById("message").value.trim(),  
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()  
-        });  
-  
-        status.textContent = "Message sent successfully ✅";  
-        status.className = "text-sm mt-3 text-green-500 text-center";  
-        form.reset();  
-      } catch (err) {  
-        console.error("Firestore error:", err);  
-        status.textContent = "Failed to send message ❌";  
-        status.className = "text-sm mt-3 text-red-500 text-center";  
-      }  
-    });  
-  });  
-</script>  </body>  
+  </footer>
+    <!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  const form = document.getElementById("supportForm");
+  const status = document.getElementById("statusMsg");
+  const submitBtn = form.querySelector("button");
+
+  // Initialize EmailJS
+  emailjs.init("6qergS1kNGE3WuEvi"); // your public key
+
+  // Disable submit until auth is ready
+  submitBtn.disabled = true;
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      try {
+        const anonUser = await auth.signInAnonymously();
+        console.log("✅ Signed in anonymously:", anonUser.user.uid);
+        return;
+      } catch (err) {
+        console.error("Auth error:", err);
+        status.textContent = "Auth error ❌";
+        status.className = "text-sm mt-3 text-red-500 text-center";
+        return;
+      }
+    }
+
+    console.log("✅ Auth ready:", user.uid);
+    submitBtn.disabled = false;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      status.textContent = "Sending message...";
+      status.className = "text-sm mt-3 text-gray-400 text-center";
+
+      const formData = {
+        userId: user.uid,
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        message: document.getElementById("message").value.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        // Save to Firestore
+        await db.collection("support").add(formData);
+
+        // Send Email via EmailJS
+        await emailjs.send("service_vaclqbc", "template_f8lklm7", formData);
+
+        status.textContent = "Message sent successfully ✅";
+        status.className = "text-sm mt-3 text-green-500 text-center";
+        form.reset();
+      } catch (err) {
+        console.error("Error:", err);
+        status.textContent = "Failed to send message ❌";
+        status.className = "text-sm mt-3 text-red-500 text-center";
+      }
+    });
+  });
+</script>
+  </body>  
 </html>
