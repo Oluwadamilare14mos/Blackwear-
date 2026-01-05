@@ -180,13 +180,14 @@
   const db = firebase.firestore();
 
    // ------------------ AUTH CHECK ------------------
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged((user) => {
     if (!user) {
-      // Redirect to entry page if not logged in
-      window.location.href = "entry.html";
+      // Not logged in → send to login/signup page
+      window.location.replace("entry.html");
     } else {
-      // Optional: You can get user info here if needed
-      console.log("Logged in user:", user.email);
+      // Logged in → load site
+      loadProductsFromFirestore();
+      loadCartCountForUser();
     }
   });
    
