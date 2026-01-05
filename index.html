@@ -4,6 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Blackwear | premium fashion Store</title>
+
+   <!-- Firebase for Auth -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+      authDomain: "blackwear-14a31.firebaseapp.com",
+      projectId: "blackwear-14a31"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Redirect to entry page if user not logged in
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = "entry.html";
+      }
+    });
+  </script>
   
   <style>
     /* (same polished styles as before) */
