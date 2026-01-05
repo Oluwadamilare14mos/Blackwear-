@@ -180,8 +180,7 @@
   const db = firebase.firestore();
 
    // ------------------ AUTH CHECK ------------------
-  auth.onAuthStateChanged((user) => {
-  console.log("AUTH STATE:", user);
+auth.onAuthStateChanged(user => {
   if (!user) {
     window.location.replace("entry.html");
   } else {
@@ -189,7 +188,7 @@
     loadCartCountForUser();
   }
 });
-   
+  
   // Helpers
   function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
   function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
