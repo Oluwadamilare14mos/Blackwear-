@@ -422,7 +422,12 @@ async function addToCart(productId, name, price, image){
     const q = document.getElementById('searchInput').value.toLowerCase();
     displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));
   }
-   
-    </script>
+
+function hideLoader() {
+  const loader = document.getElementById("authLoader");
+  if (loader) loader.style.display = "none";
+}
+
+ </script>
 </body>
 </html>
