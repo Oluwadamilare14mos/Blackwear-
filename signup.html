@@ -1,138 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sign Up — Blackwear</title>
+
+<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
 <style>
-  body { background: #0b0b0b; font-family: Poppins, sans-serif; color: white; }
+  body {
+    background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
+    font-family: 'Poppins', sans-serif;
+  }
 </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
 
-<div class="bg-[#111] p-8 rounded-xl w-full max-w-sm shadow-lg">
-  <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">Sign Up</h1>
+<body class="min-h-screen flex items-center justify-center text-white">
 
-  <input id="name" type="text" placeholder="Full Name" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <button id="signupBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold">Sign Up</button>
+<div class="bg-[#111] p-8 rounded-2xl w-full max-w-sm shadow-2xl">
+  <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">
+    Create Account
+  </h1>
 
-  <p class="mt-4 text-gray-400 text-sm">Already have an account? <a href="login.html" class="text-orange-500">Login</a></p>
-  <p id="msg" class="mt-2 text-red-500 text-sm"></p>
+  <input id="name" type="text" placeholder="Full Name"
+    class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white outline-none focus:ring-2 focus:ring-orange-500" />
+
+  <input id="email" type="email" placeholder="Email"
+    class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white outline-none focus:ring-2 focus:ring-orange-500" />
+
+  <input id="password" type="password" placeholder="Password"
+    class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white outline-none focus:ring-2 focus:ring-orange-500" />
+
+  <button id="signupBtn"
+    class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+    Sign Up
+  </button>
+
+  <p class="mt-4 text-gray-400 text-sm text-center">
+    Already have an account?
+    <a href="login.html" class="text-orange-500 font-semibold">Login</a>
+  </p>
+
+  <p id="msg" class="mt-3 text-sm text-center"></p>
 </div>
 
+<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
 };
 
+// Init
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Persistence (CRITICAL)
+await setPersistence(auth, browserLocalPersistence);
+
+// Elements
 const signupBtn = document.getElementById("signupBtn");
 const msg = document.getElementById("msg");
 
+// Signup
 signupBtn.addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
   if (!name || !email || !password) {
-    msg.textContent = "Please fill all fields.";
+    msg.textContent = "Please fill all fields";
+    msg.className = "text-red-500 text-center";
     return;
   }
 
   msg.textContent = "Creating account...";
+  msg.className = "text-gray-400 text-center";
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential =
+      await createUserWithEmailAndPassword(auth, email, password);
 
-    // Update display name
-    await updateProfile(userCredential.user, { displayName: name });
+    // Set display name
+    await updateProfile(userCredential.user, {
+      displayName: name
+    });
 
-    // Save user in Firestore users collection
+    // Save user to Firestore
     await setDoc(doc(db, "users", userCredential.user.uid), {
-      name,
-      email,
-      createdAt: new Date()
+      name: name,
+      email: email,
+      createdAt: serverTimestamp()
     });
 
     msg.textContent = "Account created! Redirecting...";
-    window.location.href = "index.html";
-  } catch (err) {
-    console.error(err);
-    msg.textContent = "Sign up failed: " + err.message;
+    msg.className = "text-green-500 text-center";
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1000);
+
+  } catch (error) {
+    console.error(error);
+    msg.textContent = error.message;
+    msg.className = "text-red-500 text-center";
   }
 });
 </script>
-</body>
-</html>
 
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — Blackwear</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body { background: #0b0b0b; font-family: Poppins, sans-serif; color: white; }
-</style>
-</head>
-<body class="min-h-screen flex items-center justify-center">
-
-<div class="bg-[#111] p-8 rounded-xl w-full max-w-sm shadow-lg">
-  <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">Login</h1>
-
-  <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <button id="loginBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold">Login</button>
-
-  <p class="mt-4 text-gray-400 text-sm">Don't have an account? <a href="signup.html" class="text-orange-500">Sign up</a></p>
-  <p id="msg" class="mt-2 text-red-500 text-sm"></p>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-  authDomain: "blackwear-14a31.firebaseapp.com",
-  projectId: "blackwear-14a31"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-const loginBtn = document.getElementById("loginBtn");
-const msg = document.getElementById("msg");
-
-loginBtn.addEventListener("click", async () => {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  msg.textContent = "Logging in...";
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    msg.textContent = "Login successful! Redirecting...";
-    window.location.href = "index.html"; // go to inbox after login
-  } catch (err) {
-    console.error(err);
-    msg.textContent = "Login failed: " + err.message;
-  }
-});
-</script>
 </body>
 </html>
