@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body { background:#0b0b0b; font-family:Poppins,sans-serif; color:white; }
+  body { background: #0b0b0b; font-family: Poppins, sans-serif; color:white; }
   .btn { transition: all 0.2s; }
   .btn:hover { transform: scale(1.05); }
 </style>
@@ -19,87 +19,87 @@
   <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
   <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
   <button id="loginBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold mb-2">Login</button>
-  
-  <button id="resendBtn" class="w-full bg-gray-700 text-white p-3 rounded-lg font-semibold mb-4 hidden">Resend Verification Email</button>
 
+  <button id="resendBtn" class="w-full bg-gray-700 text-white p-3 rounded-lg font-semibold mb-4" style="display:none;">Resend Verification Email</button>
+
+  <p class="mt-2 text-red-500 text-sm text-center" id="msg"></p>
   <p class="mt-4 text-gray-400 text-sm text-center">
     Don't have an account? <a href="signup.html" class="text-orange-500">Sign up</a>
   </p>
-  <p id="msg" class="mt-2 text-red-500 text-sm text-center"></p>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-<script>
-  // ---------- FIREBASE CONFIG ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-    authDomain: "blackwear-14a31.firebaseapp.com",
-    projectId: "blackwear-14a31"
-  };
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-  const loginBtn = document.getElementById("loginBtn");
-  const resendBtn = document.getElementById("resendBtn");
-  const msg = document.getElementById("msg");
+const loginBtn = document.getElementById("loginBtn");
+const resendBtn = document.getElementById("resendBtn");
+const msg = document.getElementById("msg");
 
-  // LOGIN
-  loginBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
+let lastUser = null; // store user to resend verification if needed
 
-    if (!email || !password) {
-      msg.textContent = "Please enter email and password.";
+loginBtn.addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    msg.style.color = "red";
+    msg.textContent = "Please fill all fields.";
+    return;
+  }
+
+  msg.style.color = "white";
+  msg.textContent = "Logging in...";
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      // Email not verified
+      msg.style.color = "orange";
+      msg.textContent = "Please verify your email before logging in.";
+      resendBtn.style.display = "block";
+      lastUser = user; // store to resend later
+      await auth.signOut(); // force logout until verified
       return;
     }
 
-    msg.textContent = "Logging in...";
-    resendBtn.style.display = "none";
+    // Email verified → redirect to index
+    msg.style.color = "green";
+    msg.textContent = "Login successful! Redirecting...";
+    window.location.href = "index.html";
 
-    try {
-      const userCredential = await auth.signInWithEmailAndPassword(email, password);
-      const user = userCredential.user;
+  } catch (err) {
+    console.error(err);
+    msg.style.color = "red";
+    msg.textContent = "Login failed: " + err.message;
+  }
+});
 
-      if (!user.emailVerified) {
-        msg.textContent = "Your email is not verified. Please check your inbox.";
-        resendBtn.style.display = "block"; // show resend button
-        return;
-      }
-
-      msg.style.color = "green";
-      msg.textContent = "Login successful! Redirecting...";
-      window.location.href = "index.html"; // go to store
-    } catch (err) {
-      msg.style.color = "red";
-      if (err.code === "auth/user-not-found") msg.textContent = "User not found.";
-      else if (err.code === "auth/wrong-password") msg.textContent = "Incorrect password.";
-      else msg.textContent = "Error: " + err.message;
-    }
-  });
-
-  // RESEND VERIFICATION EMAIL
-  resendBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    if (!email) {
-      msg.textContent = "Enter your email to resend verification.";
-      return;
-    }
-
-    try {
-      const tempUser = await auth.signInWithEmailAndPassword(email, document.getElementById("password").value);
-      await tempUser.user.sendEmailVerification();
-      msg.style.color = "green";
-      msg.textContent = "Verification email sent! Check your inbox.";
-      resendBtn.style.display = "none";
-      auth.signOut(); // log out after sending verification
-    } catch (err) {
-      msg.style.color = "red";
-      msg.textContent = "Failed to resend email: " + err.message;
-    }
-  });
+// Resend verification
+resendBtn.addEventListener("click", async () => {
+  if (!lastUser) return;
+  try {
+    await sendEmailVerification(lastUser);
+    msg.style.color = "green";
+    msg.textContent = "Verification email resent! Check your inbox.";
+  } catch (err) {
+    console.error(err);
+    msg.style.color = "red";
+    msg.textContent = "Failed to resend verification: " + err.message;
+  }
+});
 </script>
 </body>
 </html>
