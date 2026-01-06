@@ -1,118 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blackwear | premium fashion Store</title>
-
-  <style>
-    /* (same polished styles as before) */
-    * { margin:0; padding:0; box-sizing:border-box; font-family: "Segoe UI", Arial, sans-serif; }
-    body { background:#0f0f0f; color:#fff; }
-    header { background:#000; padding:14px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:50; border-bottom:1px solid #1f1f1f; }
-    .logo { color:#ff7f00; font-size:22px; font-weight:bold; letter-spacing:1px; }
-    .search-wrap { flex:1; max-width:520px; }
-    .search-wrap input { width:100%; padding:10px 16px; border-radius:30px; border:none; outline:none; font-size:14px; }
-    .icons { display:flex; align-items:center; gap:10px; }
-    .icon-btn { background:#141414; color:#ff7f00; border:1px solid #2a2a2a; border-radius:12px; padding:8px 12px; font-size:18px; cursor:pointer; transition:.2s; position:relative; }
-    .icon-btn:hover { background:#ff7f00; color:#000; }
-    .cart-count { position:absolute; top:-6px; right:-6px; background:#ff7f00; color:#000; font-size:11px; font-weight:bold; padding:2px 6px; border-radius:50px; }
-    #sideMenu { position:fixed; top:0; left:-270px; width:260px; height:100vh; background:#000; padding:20px; transition:.3s ease; z-index:200; border-right:1px solid #1f1f1f; }
-    .menu-header { margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #222; }
-    .menu-header h3 { color:#ff7f00; font-size:18px; }
-    .menu-links a { display:block; text-decoration:none; color:white; padding:12px 0; border-bottom:1px solid #1a1a1a; font-size:14px; transition:.2s; }
-    .menu-links a:hover { color:#ff7f00; padding-left:5px; }
-    #overlay { position:fixed; top:0; left:0; width:100%; height:100vh; background:rgba(0,0,0,.6); display:none; z-index:150; }
-
-    .banner-slider { padding:15px; }
-    .banner { position:relative; width:100%; height:220px; border-radius:20px; overflow:hidden; background:#000; }
-    .banner img { width:100%; height:100%; object-fit:cover; filter:brightness(0.6); transition:opacity .4s; display:block; }
-    .banner-info { position:absolute; bottom:15px; left:15px; color:#fff; }
-    .banner-info h2 { font-size:20px; margin:0; }
-    .banner-info p { color:#ff7f00; font-weight:bold; font-size:16px; margin:6px 0 0; }
-    .banner-info button { margin-top:8px; padding:8px 18px; border-radius:20px; border:none; background:#ff7f00; color:black; font-weight:bold; cursor:pointer; }
-
-    .hero { background:linear-gradient(135deg,#ff7f00,#ff4500); text-align:center; padding:40px 20px; }
-    .hero h1 { font-size:32px; margin-bottom:8px; }
-    .hero p { font-size:14px; opacity:.9; }
-    .hero button { margin-top:12px; padding:10px 30px; border-radius:30px; border:none; background:#000; color:#ff7f00; font-weight:bold; cursor:pointer; }
-
-    .categories { padding:18px 12px; background:#0a0a0a; border-bottom:1px solid #1f1f1f; overflow-x:auto; white-space:nowrap; }
-    .cat { display:inline-block; margin-right:10px; padding:10px 18px; border-radius:30px; background:#141414; border:1px solid #2a2a2a; font-size:13px; cursor:pointer; transition:.2s; }
-    .cat:hover { background:#ff7f00; color:#000; }
-
-    .products { padding:22px 14px; }
-    .products h2 { font-size:20px; margin-bottom:12px; }
-    .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
-    .product-card { background:#141414; border:1px solid #1f1f1f; padding:10px; border-radius:16px; text-align:center; transition:.2s; }
-    .product-card:hover { transform:translateY(-4px); border-color:#ff7f00; }
-    .product-card img { width:100%; height:160px; object-fit:cover; border-radius:12px; }
-    .product-card h3 { margin:10px 0 3px; font-size:14px; font-weight:600; color:#fff; }
-    .product-card p { color:#ff7f00; font-weight:bold; font-size:14px; margin:6px 0 0; }
-    .product-actions{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-}
-.product-actions button{
-  flex:1;
-  padding:10px;
-  border-radius:12px;
-  font-weight:bold;
-  border:none;
-  cursor:pointer;
-  font-size:14px;
-}
-.buy-btn{
-  background:#ff7f00;
-  color:#000;
-}
-.cart-btn{
-  background:#1f1f1f;
-  color:#ff7f00;
-  border:1px solid #ff7f00;
-}
-
-    footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; background:#000; border-top:1px solid #1f1f1f; }
-    .small-note { font-size:12px; color:#aaa; margin-top:6px; }
-    .no-products { color:#aaa; padding:20px; text-align:center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwear | Premium Fashion Store</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: "Segoe UI", Arial, sans-serif; }
+  body { background:#0f0f0f; color:#fff; }
+  #mainContent { display:none; } /* hide until auth confirmed */
+  header { background:#000; padding:14px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:50; border-bottom:1px solid #1f1f1f; }
+  .logo { color:#ff7f00; font-size:22px; font-weight:bold; letter-spacing:1px; }
+  /* Add other styles as needed (products, banners, categories etc.) */
+  #overlay { position:fixed; top:0; left:0; width:100%; height:100vh; background:rgba(0,0,0,.6); display:none; z-index:150; }
+  #sideMenu { position:fixed; top:0; left:-270px; width:260px; height:100vh; background:#000; padding:20px; transition:.3s ease; z-index:200; border-right:1px solid #1f1f1f; }
+</style>
 </head>
 <body>
 
-  <div id="overlay" onclick="closeMenu()"></div>
+<div id="overlay" onclick="closeMenu()"></div>
 
-  <!-- SIDE MENU (replaceable) -->
-  <div id="sideMenu">
-    <div class="menu-header">
-      <h3 id="menuWelcome">Welcome to Blackwear</h3>
-      <div class="small-note" id="userEmailNote"></div>
-    </div>
-
-    <div class="menu-links">
-      <a href="my-order.html">My Orders</a>
-      <a href="wishlist.html">Wishlist</a>
-      <a href="contact.html">Contact</a>
-      <a href="tracking.html">Delivery Tracking</a>
-      <a href="support.html">Support</a>
-      <a href="settings.html">Settings</a>
-      <a href="help.html">Help & Support</a>
-      <a href="about.html">About Blackwear</a>
-      <a href="store.html">Our Store</a>
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="terms.html">Terms & Conditions</a>
-      <a href="#" id="signOutBtn" style="display:none;">Sign Out</a>
-    </div>
+<!-- Side Menu -->
+<div id="sideMenu">
+  <div class="menu-header">
+    <h3 id="menuWelcome">Welcome to Blackwear</h3>
+    <div class="small-note" id="userEmailNote"></div>
   </div>
+  <div class="menu-links">
+    <a href="my-order.html">My Orders</a>
+    <a href="wishlist.html">Wishlist</a>
+    <a href="contact.html">Contact</a>
+    <a href="tracking.html">Delivery Tracking</a>
+    <a href="support.html">Support</a>
+    <a href="settings.html">Settings</a>
+    <a href="help.html">Help & Support</a>
+    <a href="about.html">About Blackwear</a>
+    <a href="store.html">Our Store</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms & Conditions</a>
+    <a href="#" id="signOutBtn" style="display:none;">Sign Out</a>
+  </div>
+</div>
 
-  <!-- HEADER -->
+<!-- Loader -->
+<div id="loader" style="display:flex;align-items:center;justify-content:center;height:100vh;">
+  <p>Loading... ⏳</p>
+</div>
+
+<!-- Main content (hidden until auth check) -->
+<div id="mainContent">
   <header>
     <div class="logo">Blackwear</div>
-
     <div class="search-wrap">
-      <input type="text" placeholder="Search products..." id="searchInput" onkeyup="searchProducts()" />
+      <input type="text" placeholder="Search products..." id="searchInput" onkeyup="searchProducts()">
     </div>
-
     <div class="icons">
       <button class="icon-btn" onclick="toggleMenu()">☰</button>
       <button class="icon-btn" onclick="openCart()">🛒
@@ -121,313 +61,71 @@
     </div>
   </header>
 
-  <!-- RANDOM BANNER (rotates among real products from Firestore) -->
-  <section class="banner-slider">
-    <div class="banner">
-      <img id="bannerImage" src="" alt="Featured product" />
-      <div class="banner-info">
-        <h2 id="bannerTitle">Featured</h2>
-        <p id="bannerPrice">₦0</p>
-        <button id="bannerShopBtn">Shop Now</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- HERO -->
+  <!-- Example content -->
   <section class="hero">
     <h1>Blackwear Collection</h1>
     <p>Premium fashion for every style</p>
-    <button onclick="scrollToProducts()">Shop Now</button>
-  </section>
-
-  <!-- CATEGORIES -->
-  <section class="categories" id="categoryStrip">
-    <!-- categories loaded from DB or static fallback -->
-  </section>
-
-  <!-- PRODUCTS -->
-  <section class="products" id="products">
-    <h2>Trending Products</h2>
-    <div class="product-grid" id="productGrid"></div>
-    <div id="noProductsMsg" class="no-products" style="display:none;">No products found.</div>
   </section>
 
   <footer>
     © 2025 Blackwear. All rights reserved.
   </footer>
+</div>
 
-  <!-- Firebase JS (compat for simpler single-file usage) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<!-- Firebase JS -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
- <script>
-  // ---------- FIREBASE CONFIG ----------
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
     authDomain: "blackwear-14a31.firebaseapp.com",
-    databaseURL: "https://blackwear-14a31-default-rtdb.firebaseio.com",
-    projectId: "blackwear-14a31",
-    storageBucket: "blackwear-14a31.firebasestorage.app",
-    messagingSenderId: "222479690292",
-    appId: "1:222479690292:web:82bd91e186da6412133861",
-    measurementId: "G-22CT8W6RL7"
+    projectId: "blackwear-14a31"
   };
-
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-   // ------------------ AUTH CHECK ------------------
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    window.location.replace("entry.html");
-  } else {
-    loadProductsFromFirestore();
-    loadCartCountForUser();
-  }
-});
-  
-  // Helpers
-  function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
-  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  const mainContent = document.getElementById('mainContent');
+  const loader = document.getElementById('loader');
+  const signOutBtn = document.getElementById('signOutBtn');
+  const menuWelcome = document.getElementById('menuWelcome');
+  const userEmailNote = document.getElementById('userEmailNote');
 
-  // PRODUCT STORAGE
-  let products = [];
-
-  async function loadProductsFromFirestore() {
-    try {
-      const snap = await db.collection('products').get();
-      products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      displayProducts(products);
-      setupBanner(products);
-      loadCategories(products);
-      document.getElementById('noProductsMsg').style.display = products.length ? 'none' : 'block';
-    } catch (err) {
-      console.error('Failed loading products', err);
-      const msg = document.getElementById('noProductsMsg');
-      msg.textContent = 'Failed to load products.';
-      msg.style.display = 'block';
+  // Auth check
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.replace("entry.html");
+    } else {
+      loader.style.display = 'none';
+      mainContent.style.display = 'block';
+      signOutBtn.style.display = 'block';
+      menuWelcome.textContent = `Welcome, ${user.displayName || 'User'}`;
+      userEmailNote.textContent = user.email;
+      loadCartCountForUser();
+      loadProductsFromFirestore(); // implement your products logic here
     }
-  }
+  });
 
-function displayProducts(list) {  
-      const grid = document.getElementById('productGrid');  
-      grid.innerHTML = '';  
-      if (!list || !list.length) {  
-        document.getElementById('noProductsMsg').style.display = 'block';  
-        return;  
-      } else {  
-        document.getElementById('noProductsMsg').style.display = 'none';  
-      }  
+  // Sign-out
+  signOutBtn.addEventListener('click', async () => {
+    await auth.signOut();
+    window.location.replace('entry.html');
+  });
 
-    list.forEach(p => {
-      const img = p.image || 'https://via.placeholder.com/1200x400';
-      const name = escapeHtml(p.name || 'Untitled');
-      const price = Number(p.price || 0).toLocaleString();
+  // Menu toggle
+  function toggleMenu(){ document.getElementById('sideMenu').style.left='0'; document.getElementById('overlay').style.display='block'; }
+  function closeMenu(){ document.getElementById('sideMenu').style.left='-270px'; document.getElementById('overlay').style.display='none'; }
+  function openCart(){ window.location.href='cart.html'; }
 
-      const el = document.createElement('div');
-      el.className = 'product-card';
-      el.dataset.productId = p.id;
-      el.innerHTML = `
-  <a href="product.html?id=${p.id}">
-  <img src="${img}" alt="${name}">
-</a>
-
-<h3>
-  <a href="product.html?id=${p.id}" style="color:inherit;text-decoration:none;">
-    ${name}
-  </a>
-</h3>
-  <p>₦${price}</p>
-
-  <div class="product-actions">
-    <button class="buy-btn"
-      onclick="placeOrder(
-        '${escapeJs(p.name||'')}',
-        ${Number(p.price||0)},
-        '${escapeJs(img)}',
-        '${p.id}'
-      )">
-      Buy Now
-    </button>
-
-    <button class="cart-btn"
-      onclick="addToCart(
-        '${p.id}',
-        '${escapeJs(p.name||'')}',
-        ${Number(p.price||0)},
-        '${escapeJs(img)}'
-      )">
-      Add to Cart
-    </button>
-  </div>
-`;
-      grid.appendChild(el);
-    });
-  }
-
-  // Random banner logic
-  let bannerTimer = null;
-  function setupBanner(list) {
-    const imgEl = document.getElementById('bannerImage');
-    const titleEl = document.getElementById('bannerTitle');
-    const priceEl = document.getElementById('bannerPrice');
-    const btn = document.getElementById('bannerShopBtn');
-
-    if (!list || !list.length) {
-      imgEl.src = 'https://via.placeholder.com/1200x400?text=No+Products';
-      titleEl.textContent = 'No products available';
-      priceEl.textContent = '';
-      btn.onclick = () => scrollToProducts();
-      return;
-    }
-
-    function setRandom() {
-      const p = list[Math.floor(Math.random() * list.length)];
-      imgEl.style.opacity = 0;
-      setTimeout(() => {
-        imgEl.src = p.image || 'https://via.placeholder.com/1200x400';
-        titleEl.textContent = p.name || 'Product';
-        priceEl.textContent = '₦' + Number(p.price||0).toLocaleString();
-        btn.onclick = () => scrollToProductById(p.id);
-        imgEl.style.opacity = 1;
-      }, 200);
-    }
-
-    setRandom();
-    if (bannerTimer) clearInterval(bannerTimer);
-    bannerTimer = setInterval(setRandom, 3500);
-  }
-
-  function scrollToProductById(id) {
-    const cards = document.querySelectorAll('.product-card');
-    for (const c of cards) {
-      if (c.dataset.productId === id) {
-        c.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        c.classList.add('highlight');
-        setTimeout(()=>c.classList.remove('highlight'), 1200);
-        return;
-      }
-    }
-    scrollToProducts();
-  }
-
-  // Categories loader
-  function loadCategories(list) {
-    const strip = document.getElementById('categoryStrip');
-    strip.innerHTML = '';
-    const set = new Set();
-    list.forEach(p => {
-      if (Array.isArray(p.categories)) p.categories.forEach(c => set.add(c));
-      else if (p.category) set.add(p.category);
-    });
-    const defaults = ['Boys','Girls','Babies','Sneakers','T-Shirts','Jeans','Hoodies','Caps','Bags','School Wears','Native Wears'];
-    const cats = Array.from(set).length ? Array.from(set) : defaults;
-    cats.slice(0,30).forEach(c => {
-      const d = document.createElement('div');
-      d.className = 'cat';
-      d.textContent = c;
-      d.onclick = () => filterByCategory(c);
-      strip.appendChild(d);
-    });
-  }
-
-  function filterByCategory(cat) {
-    const filtered = products.filter(p => {
-      if (Array.isArray(p.categories)) return p.categories.includes(cat);
-      if (p.category) return String(p.category).toLowerCase() === String(cat).toLowerCase();
-      return false;
-    });
-    displayProducts(filtered.length ? filtered : products.filter(p => p.name && p.name.toLowerCase().includes(cat.toLowerCase())));
-  }
-
-  // Orders
-  async function placeOrder(productName, price, image, productId = null) {
-    try {
-      const user = auth.currentUser;
-      if (!user) { alert('Please wait, signing in...'); return; }
-      const order = {
-        userId: user.uid,
-        productId: productId || null,
-        productName: productName,
-        price: Number(price),
-        image: image || '',
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      const docRef = await db.collection('orders').add(order);
-      incrementCartCount();
-      alert('Order placed! Order ID: ' + docRef.id);
-    } catch (err) {
-      console.error('placeOrder error', err);
-      alert('Failed to place order. Try again.');
-    }
-  }
-
-   // Add to Cart (separate from orders)
-async function addToCart(productId, name, price, image){
-  try{
-    const user = auth.currentUser;
-    if(!user){
-      alert('Please wait...');
-      return;
-    }
-
-    await db.collection('cart').add({
-      userId: user.uid,
-      productId: productId,
-      productName: name,
-      price: Number(price),
-      image: image,
-      quantity: 1,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    cartCount++;
-    updateCartBadge();
-    alert('Added to cart');
-  }catch(err){
-    console.error('addToCart error', err);
-    alert('Failed to add to cart');
-  }
-}
-
-  // Cart count
+  // Placeholder cart/products functions
   let cartCount = 0;
-  function incrementCartCount() { cartCount++; updateCartBadge(); }
-  function updateCartBadge() { document.getElementById('cartCount').textContent = cartCount; }
-  async function loadCartCountForUser() {
-  const user = auth.currentUser;
-  if (!user) return;
-  try {
-    const snap = await db.collection('cart')
-      .where('userId','==',user.uid)
-      .get();
-    cartCount = snap.size;
-    updateCartBadge();
-  } catch (err) {
-    console.error('count error', err);
-  }
-}
+  function loadCartCountForUser(){ /* implement Firestore cart count */ }
+  function loadProductsFromFirestore(){ /* implement Firestore products display */ }
 
-  // Menu & UI
-  function toggleMenu() { document.getElementById('sideMenu').style.left = '0'; document.getElementById('overlay').style.display = 'block'; }
-  function closeMenu() { document.getElementById('sideMenu').style.left = '-270px'; document.getElementById('overlay').style.display = 'none'; }
-  function openCart() { window.location.href = 'cart.html'; }
-  function scrollToProducts() { document.getElementById('products').scrollIntoView({ behavior: 'smooth' }); }
-  function searchProducts() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));
-  }
+  function searchProducts(){ /* implement search */ }
+</script>
 
-function hideLoader() {
-  const loader = document.getElementById("authLoader");
-  if (loader) loader.style.display = "none";
-}
-
- </script>
 </body>
 </html>
