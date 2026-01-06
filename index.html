@@ -80,12 +80,6 @@
 </head>
 <body>
 
-  <div id="authLoader" class="fixed inset-0 bg-black flex items-center justify-center z-50">
-  <div class="text-orange-500 text-xl animate-pulse">
-    Loading Blackwear…
-  </div>
-  </div>
-
   <div id="overlay" onclick="closeMenu()"></div>
 
   <!-- SIDE MENU (replaceable) -->
@@ -186,14 +180,14 @@
   const db = firebase.firestore();
 
    // ------------------ AUTH CHECK ------------------
-   if (!user) {
+auth.onAuthStateChanged(user => {
+  if (!user) {
     window.location.replace("entry.html");
   } else {
-    console.log("Authenticated:", user.email);
     loadProductsFromFirestore();
     loadCartCountForUser();
-    hideLoader();
   }
+});
   
   // Helpers
   function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
