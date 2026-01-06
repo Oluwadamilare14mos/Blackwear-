@@ -158,6 +158,14 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
     if (!user) {
       window.location.replace("login.html"); // redirect all visitors to login
     }
+
+    auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.replace("login.html");
+  } else {
+    loadProductsFromFirestore();
+    loadCartCountForUser();
+  }
   });
 
 // Helpers
