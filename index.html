@@ -1,7 +1,10 @@
-<!DOCTYPE html>  <html lang="en">    <head>    
+<!DOCTYPE html>  
+<html lang="en">    
+  <head>    
   <meta charset="utf-8" />    
   <meta name="viewport" content="width=device-width, initial-scale=1" />    
-  <title>Blackwear | premium fashion Store</title>    <style>    
+  <title>Blackwear | premium fashion Store</title>    
+    <style>    
     /* (same polished styles as before) */    
     * { margin:0; padding:0; box-sizing:border-box; font-family: "Segoe UI", Arial, sans-serif; }    
     body { background:#0f0f0f; color:#fff; }    
@@ -72,9 +75,11 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
 .small-note { font-size:12px; color:#aaa; margin-top:6px; }    
 .no-products { color:#aaa; padding:20px; text-align:center; }
 
-</style>  </head>
+</style>  
+  </head>
 
-<body>    <div id="overlay" onclick="closeMenu()"></div>    <!-- SIDE MENU (replaceable) -->    <div id="sideMenu">    
+<body>   
+  <div id="overlay" onclick="closeMenu()"></div>    <!-- SIDE MENU (replaceable) -->    <div id="sideMenu">    
     <div class="menu-header">    
       <h3 id="menuWelcome">Welcome to Blackwear</h3>    
       <div class="small-note" id="userEmailNote"></div>    
@@ -99,7 +104,9 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
   <button class="icon-btn" onclick="openCart()">🛒    
     <span id="cartCount" class="cart-count">0</span>    
   </button>    
-</div>    </header>    <!-- RANDOM BANNER (rotates among real products from Firestore) -->    <section class="banner-slider">    
+</div>    
+</header>    
+  <!-- RANDOM BANNER (rotates among real products from Firestore) -->    <section class="banner-slider">    
     <div class="banner">    
       <img id="bannerImage" src="" alt="Featured product" />    
       <div class="banner-info">    
@@ -108,19 +115,30 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
         <button id="bannerShopBtn">Shop Now</button>    
       </div>    
     </div>    
-  </section>    <!-- HERO -->    <section class="hero">    
+  </section>   
+  <!-- HERO -->    
+  <section class="hero">    
     <h1>Blackwear Collection</h1>    
     <p>Premium fashion for every style</p>    
     <button onclick="scrollToProducts()">Shop Now</button>    
-  </section>    <!-- CATEGORIES -->    <section class="categories" id="categoryStrip">    
+  </section>    
+  <!-- CATEGORIES -->    
+  <section class="categories" id="categoryStrip">    
     <!-- categories loaded from DB or static fallback -->    
-  </section>    <!-- PRODUCTS -->    <section class="products" id="products">    
+  </section>    
+  <!-- PRODUCTS -->    
+  <section class="products" id="products">    
     <h2>Trending Products</h2>    
     <div class="product-grid" id="productGrid"></div>    
     <div id="noProductsMsg" class="no-products" style="display:none;">No products found.</div>    
   </section>    <footer>    
     © 2025 Blackwear. All rights reserved.    
-  </footer>    <!-- Firebase JS (compat for simpler single-file usage) -->    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>   <script>    
+  </footer>   
+  <!-- Firebase JS (compat for simpler single-file usage) -->    
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>    
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>    
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>   
+  <script>    
   // ---------- FIREBASE CONFIG ----------    
   const firebaseConfig = {    
     apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",    
