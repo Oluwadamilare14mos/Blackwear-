@@ -134,8 +134,8 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
   </section>    <footer>    
     © 2025 Blackwear. All rights reserved.    
   </footer>   
-  
-<!-- Firebase JS -->
+
+  <!-- Firebase JS -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -162,13 +162,13 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
       // Not logged in → redirect to login
       window.location.replace("login.html");
     } else if (!user.emailVerified) {
-      // Logged in but email not verified → redirect to login
+      // Logged in but email not verified → alert & redirect
       alert("Please verify your email before accessing Blackwear.");
       auth.signOut().then(() => window.location.replace("login.html"));
     } else {
       // Logged in and verified → load store
-      loadProductsFromFirestore();
-      loadCartCountForUser();
+      if (typeof loadProductsFromFirestore === "function") loadProductsFromFirestore();
+      if (typeof loadCartCountForUser === "function") loadCartCountForUser();
 
       // Show user info in menu
       const welcomeEl = document.getElementById('menuWelcome');
@@ -190,7 +190,7 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
   function escapeJs(v) { return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
 
-  // The rest of your functions like loadProductsFromFirestore(), addToCart(), placeOrder() etc.
+  // --- Your existing functions like loadProductsFromFirestore(), addToCart(), placeOrder() remain below ---
 let products = [];
 
 async function loadProductsFromFirestore() {
