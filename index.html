@@ -154,7 +154,7 @@ const db = firebase.firestore();
 // ------------------ AUTH CHECK ------------------
 auth.onAuthStateChanged(user => {
 if (!user) {
-window.location.replace("entry.html");
+window.location.replace("index.html");
 } else {
 loadProductsFromFirestore();
 loadCartCountForUser();
