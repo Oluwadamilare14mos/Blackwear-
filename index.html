@@ -135,7 +135,7 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
     © 2025 Blackwear. All rights reserved.    
   </footer>   
   
-  <!-- Firebase JS -->
+<!-- Firebase JS -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -156,21 +156,33 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // Redirect all visitors to login if not signed in
+  // ---------- AUTH CHECK ----------
   auth.onAuthStateChanged(user => {
-    if (!user) {
-      window.location.replace("login.html"); // <- redirect
+    if (!user || !user.emailVerified) {
+      // Redirect to login if not logged in or email not verified
+      window.location.replace("login.html");
     } else {
-      // Only load products if user is logged in
+      // User is logged in → load the store
       loadProductsFromFirestore();
       loadCartCountForUser();
+
+      // Show user info in menu
+      const welcomeEl = document.getElementById('menuWelcome');
+      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + (user.displayName || 'User');
+
+      const signOutBtn = document.getElementById('signOutBtn');
+      if (signOutBtn) {
+        signOutBtn.style.display = 'block';
+        signOutBtn.onclick = () => auth.signOut().then(() => window.location.replace('login.html'));
+      }
     }
   });
 
-// Helpers
-function escapeJs(v){ return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
-function escapeHtml(s){ return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
+  // ---------- HELPER FUNCTIONS ----------
+  function escapeJs(v) { return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
+  function escapeHtml(s) { return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
 
+  // The rest of your functions like loadProductsFromFirestore(), addToCart(), placeOrder() etc.
 // PRODUCT STORAGE
 let products = [];
 
