@@ -140,29 +140,25 @@ footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; backg
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>   
   <script>    
   // ---------- FIREBASE CONFIG ----------    
-  const firebaseConfig = {    
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",    
-    authDomain: "blackwear-14a31.firebaseapp.com",    
-    databaseURL: "https://blackwear-14a31-default-rtdb.firebaseio.com",    
-    projectId: "blackwear-14a31",    
-    storageBucket: "blackwear-14a31.firebasestorage.app",    
-    messagingSenderId: "222479690292",    
-    appId: "1:222479690292:web:82bd91e186da6412133861",    
-    measurementId: "G-22CT8W6RL7"    
-  };    // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+  <script>
+  // Initialize Firebase (same as before)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-// ------------------ AUTH CHECK ------------------
-auth.onAuthStateChanged(user => {
-if (!user) {
-window.location.replace("entry.html");
-} else {
-loadProductsFromFirestore();
-loadCartCountForUser();
-}
-});
+  // Redirect to login if user is not signed in
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.replace("login.html"); // redirect all visitors to login
+    }
+  });
 
 // Helpers
 function escapeJs(v){ return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
