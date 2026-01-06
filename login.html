@@ -47,7 +47,7 @@ loginBtn.addEventListener("click", async () => {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     msg.textContent = "Login successful! Redirecting...";
-    window.location.href = "index.html"; // go to inbox after login
+    window.location.href = "index.html"; // go to index after login
   } catch (err) {
     console.error(err);
     msg.textContent = "Login failed: " + err.message;
