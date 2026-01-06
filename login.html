@@ -1,109 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — Blackwear</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
-      font-family: Poppins, sans-serif;
-      color: white;
-    }
-    input:focus {
-      outline: none;
-      border-color: #ff7f50;
-      box-shadow: 0 0 5px #ff7f50;
-    }
-    button:hover {
-      background-color: #ff9900;
-      transform: scale(1.02);
-      transition: all 0.2s;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Blackwear</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#0b0b0b; font-family:Poppins,sans-serif; color:white; }
+  .btn { transition: all 0.2s; }
+  .btn:hover { transform: scale(1.05); }
+</style>
 </head>
 <body class="min-h-screen flex items-center justify-center">
 
-  <div class="bg-[#111] p-10 rounded-2xl w-full max-w-md shadow-2xl border border-gray-800">
-    <h1 class="text-4xl font-extrabold text-orange-500 mb-8 text-center">Blackwear Login</h1>
+<div class="bg-[#111] p-8 rounded-xl w-full max-w-sm shadow-lg">
+  <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">Login</h1>
 
-    <form id="loginForm" class="flex flex-col gap-5">
-      <input id="email" type="email" placeholder="Email" class="w-full p-4 rounded-xl bg-[#222] text-white placeholder-gray-400 border border-gray-700" required />
-      <input id="password" type="password" placeholder="Password" class="w-full p-4 rounded-xl bg-[#222] text-white placeholder-gray-400 border border-gray-700" required />
-      <button id="loginBtn" class="w-full bg-orange-500 text-black p-4 rounded-xl font-bold shadow-lg">Login</button>
-    </form>
+  <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
+  <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
+  <button id="loginBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold mb-2">Login</button>
+  
+  <button id="resendBtn" class="w-full bg-gray-700 text-white p-3 rounded-lg font-semibold mb-4 hidden">Resend Verification Email</button>
 
-    <p class="mt-6 text-gray-400 text-center">Don't have an account? <a href="signup.html" class="text-orange-500 font-semibold">Sign Up</a></p>
-    <p id="msg" class="mt-3 text-red-500 text-sm text-center"></p>
-  </div>
+  <p class="mt-4 text-gray-400 text-sm text-center">
+    Don't have an account? <a href="signup.html" class="text-orange-500">Sign up</a>
+  </p>
+  <p id="msg" class="mt-2 text-red-500 text-sm text-center"></p>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
-      authDomain: "blackwear-14a31.firebaseapp.com",
-      projectId: "blackwear-14a31"
-    };
+<script>
+  // ---------- FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    const loginForm = document.getElementById("loginForm");
-    const loginBtn = document.getElementById("loginBtn");
-    const msg = document.getElementById("msg");
+  const loginBtn = document.getElementById("loginBtn");
+  const resendBtn = document.getElementById("resendBtn");
+  const msg = document.getElementById("msg");
 
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  // LOGIN
+  loginBtn.addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+    if (!email || !password) {
+      msg.textContent = "Please enter email and password.";
+      return;
+    }
 
-      if (!email || !password) {
-        msg.textContent = "Please enter both email and password.";
+    msg.textContent = "Logging in...";
+    resendBtn.style.display = "none";
+
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        msg.textContent = "Your email is not verified. Please check your inbox.";
+        resendBtn.style.display = "block"; // show resend button
         return;
       }
 
-      loginBtn.disabled = true;
-      msg.textContent = "Logging in...";
+      msg.style.color = "green";
+      msg.textContent = "Login successful! Redirecting...";
+      window.location.href = "index.html"; // go to store
+    } catch (err) {
+      msg.style.color = "red";
+      if (err.code === "auth/user-not-found") msg.textContent = "User not found.";
+      else if (err.code === "auth/wrong-password") msg.textContent = "Incorrect password.";
+      else msg.textContent = "Error: " + err.message;
+    }
+  });
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+  // RESEND VERIFICATION EMAIL
+  resendBtn.addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+      msg.textContent = "Enter your email to resend verification.";
+      return;
+    }
 
-        if (!user.emailVerified) {
-          msg.textContent = "Please verify your email before logging in.";
-          loginBtn.disabled = false;
-          return;
-        }
-
-        msg.classList.remove("text-red-500");
-        msg.classList.add("text-green-500");
-        msg.textContent = "Login successful! Redirecting...";
-
-        // Redirect to index
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 1500);
-
-      } catch (err) {
-        loginBtn.disabled = false;
-        console.error(err);
-
-        if (err.code === "auth/user-not-found") {
-          msg.textContent = "No account found with this email.";
-        } else if (err.code === "auth/wrong-password") {
-          msg.textContent = "Incorrect password.";
-        } else if (err.code === "auth/invalid-email") {
-          msg.textContent = "Invalid email address.";
-        } else {
-          msg.textContent = "Login failed. Try again.";
-        }
-      }
-    });
-  </script>
-
+    try {
+      const tempUser = await auth.signInWithEmailAndPassword(email, document.getElementById("password").value);
+      await tempUser.user.sendEmailVerification();
+      msg.style.color = "green";
+      msg.textContent = "Verification email sent! Check your inbox.";
+      resendBtn.style.display = "none";
+      auth.signOut(); // log out after sending verification
+    } catch (err) {
+      msg.style.color = "red";
+      msg.textContent = "Failed to resend email: " + err.message;
+    }
+  });
+</script>
 </body>
 </html>
