@@ -2,18 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Welcome — Blackwear</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-black text-white flex items-center justify-center min-h-screen">
-  <div class="text-center space-y-6">
-    <h1 class="text-4xl font-bold text-orange-500">Blackwear</h1>
+<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen">
 
-    <div class="flex gap-4 justify-center">
-      <a href="login.html" class="bg-orange-500 text-black px-6 py-3 rounded-lg">Login</a>
-      <a href="signup.html" class="bg-gray-700 px-6 py-3 rounded-lg">Sign Up</a>
-    </div>
+  <h1 class="text-4xl font-bold text-orange-500 mb-10">Welcome to Blackwear</h1>
+
+  <div class="space-x-4">
+    <a href="signup.html"
+       class="bg-orange-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-orange-600">
+      Sign Up
+    </a>
+
+    <a href="login.html"
+       class="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600">
+      Login
+    </a>
   </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+      authDomain: "blackwear-14a31.firebaseapp.com",
+      projectId: "blackwear-14a31"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // 🔁 Auto-redirect if already logged in
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        window.location.replace("/index.html");
+      }
+    });
+  </script>
+
 </body>
 </html>
