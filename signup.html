@@ -5,10 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign Up — Blackwear</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <style>
   body { background: #0b0b0b; font-family: Poppins,sans-serif; color:white; }
   .btn { transition: all 0.2s; }
   .btn:hover { transform: scale(1.05); }
+  .input-group { position: relative; }
+  .input-group i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999; }
 </style>
 </head>
 <body class="min-h-screen flex items-center justify-center">
@@ -17,14 +20,20 @@
   <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">Sign Up</h1>
 
   <input id="name" type="text" placeholder="Full Name" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
+
   <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
-  <button id="signupBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold">Sign Up</button>
+
+  <div class="input-group mb-4">
+    <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#222] text-white" />
+    <i class="fa fa-eye" id="togglePassword"></i>
+  </div>
+
+  <button id="signupBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold mb-2">Sign Up</button>
 
   <p class="mt-4 text-gray-400 text-sm text-center">
     Already have an account? <a href="login.html" class="text-orange-500">Login</a>
   </p>
-  <p id="msg" class="mt-2 text-red-500 text-sm text-center"></p>
+  <p id="msg" class="mt-2 text-sm text-center"></p>
 </div>
 
 <script type="module">
@@ -43,15 +52,31 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- Show/Hide Password ---
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+togglePassword.addEventListener('click', () => {
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    togglePassword.classList.replace("fa-eye", "fa-eye-slash");
+  } else {
+    passwordInput.type = "password";
+    togglePassword.classList.replace("fa-eye-slash", "fa-eye");
+  }
+});
+
+// --- Sign Up Logic ---
 const signupBtn = document.getElementById("signupBtn");
 const msg = document.getElementById("msg");
 
 signupBtn.addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
   const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const password = passwordInput.value;
 
   if (!name || !email || !password) {
+    msg.style.color = "red";
     msg.textContent = "Please fill all fields.";
     return;
   }
@@ -80,7 +105,7 @@ signupBtn.addEventListener("click", async () => {
     msg.style.color = "green";
     msg.textContent = "Account created! Verification email sent. Check your inbox.";
 
-    // Optional: sign out immediately to force verification first
+    // Optional: sign out to force verification
     await auth.signOut();
 
   } catch (err) {
