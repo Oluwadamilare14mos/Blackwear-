@@ -186,14 +186,20 @@
   const db = firebase.firestore();
 
    // ------------------ AUTH CHECK ------------------
-auth.onAuthStateChanged(user => {
+let authChecked = false;
+
+auth.onAuthStateChanged((user) => {
+  if (authChecked) return;
+  authChecked = true;
+
   if (!user) {
     window.location.replace("entry.html");
   } else {
+    console.log("Authenticated:", user.email);
     loadProductsFromFirestore();
     loadCartCountForUser();
+    hideLoader();
   }
-});
   
   // Helpers
   function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
