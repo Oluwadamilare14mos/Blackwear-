@@ -386,6 +386,22 @@ async function addToCart(productId, name, price, image){
     console.error('count error', err);  
   }  
 }  
+      // ---------- MENU PROFILE NAV ----------
+function goToProfile() {
+  window.location.href = "profile.html";
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  document.getElementById("menuUserName").textContent =
+    user.displayName || "User";
+
+  db.collection("users").doc(user.uid).get().then(doc => {
+    if (doc.exists && doc.data().photoURL) {
+      document.getElementById("menuAvatar").src = doc.data().photoURL;
+    }
+  });
   
   // Menu & UI  
   function toggleMenu() { document.getElementById('sideMenu').style.left = '0'; document.getElementById('overlay').style.display = 'block'; }  
