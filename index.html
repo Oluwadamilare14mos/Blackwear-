@@ -242,7 +242,55 @@ function displayProducts(list) {
       grid.appendChild(el);  
     });  
   }  
-  
+  <script>
+  // ---------- FIREBASE INIT ----------
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // ---------- GLOBAL FUNCTIONS ----------
+  function toggleMenu() { /* menu logic */ }
+  function closeMenu() { /* menu logic */ }
+  function openCart() { window.location.href = 'cart.html'; }
+  function scrollToProducts() { document.getElementById('products').scrollIntoView({behavior:'smooth'}); }
+  function searchProducts() { 
+    const q = document.getElementById('searchInput').value.toLowerCase(); 
+    displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q))); 
+  }
+
+  function goToProfile() { window.location.href = 'profile.html'; }
+
+  let cartCount = 0;
+  function updateCartBadge() { document.getElementById('cartCount').textContent = cartCount; }
+  async function loadCartCountForUser() { 
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await db.collection('cart').where('userId','==',user.uid).get();
+    cartCount = snap.size;
+    updateCartBadge();
+  }
+
+  // ---------- AUTH CHECK (USER-SPECIFIC) ----------
+  auth.onAuthStateChanged(async user => {
+    if (!user) {
+      window.location.replace('login.html');
+      return;
+    }
+
+    // Update menu/profile
+    const nameEl = document.getElementById('menuUserName');
+    if(nameEl) nameEl.textContent = user.displayName || "User";
+
+    const avatarEl = document.getElementById('menuAvatar');
+    const docSnap = await db.collection('users').doc(user.uid).get();
+    if(docSnap.exists && docSnap.data().photoURL && avatarEl) {
+      avatarEl.src = docSnap.data().photoURL;
+    }
+
+    // Load products & cart
+    loadProductsFromFirestore();
+    await loadCartCountForUser();
+  });
+    
   // Random banner logic  
   let bannerTimer = null;  
   function setupBanner(list) {  
