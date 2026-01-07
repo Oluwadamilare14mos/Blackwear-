@@ -396,7 +396,22 @@ async function addToCart(productId, name, price, image){
     const q = document.getElementById('searchInput').value.toLowerCase();  
     displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));  
   }  
-  
+
+    function goToProfile() {
+  window.location.href = "profile.html";
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  document.getElementById("menuUserName").textContent =
+    user.displayName || "User";
+
+  db.collection("users").doc(user.uid).get().then(doc => {
+    if (doc.exists && doc.data().photoURL) {
+      document.getElementById("menuAvatar").src = doc.data().photoURL;
+    }
+
   // Auth and init  
   async function initAuthAndLoad() {  
     auth.onAuthStateChanged(async user => {  
