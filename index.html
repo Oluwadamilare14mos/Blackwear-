@@ -1,5 +1,5 @@
-<!DOCTYPE html>  
-<html lang="en">  
+
+<!DOCTYPE html>  <html lang="en">  
 <head>  
   <meta charset="utf-8" />  
   <meta name="viewport" content="width=device-width, initial-scale=1" />  
@@ -74,30 +74,12 @@
     footer { text-align:center; padding:20px 10px; color:#666; font-size:13px; background:#000; border-top:1px solid #1f1f1f; }  
     .small-note { font-size:12px; color:#aaa; margin-top:6px; }  
     .no-products { color:#aaa; padding:20px; text-align:center; }  
-  </style>  
-</head>  
-<body>    
-  <div id="overlay" onclick="closeMenu()"></div>    <!-- SIDE MENU (replaceable) -->    <div id="sideMenu">  
+  </style>  </head>  
+<body>    <div id="overlay" onclick="closeMenu()"></div>    <!-- SIDE MENU (replaceable) -->    <div id="sideMenu">  
     <div class="menu-header">  
-      <h3 id="menuWelcome">Welcome to Blackwear</h3> 
-      <!-- USER PROFILE PREVIEW -->
-<div onclick="goToProfile()"
-     class="flex items-center gap-3 cursor-pointer px-4 py-3 border-b border-[#222] mt-2">
-
-  <img id="menuAvatar"
-       src="https://ui-avatars.com/api/?name=U&background=111&color=fff"
-       class="w-10 h-10 rounded-full object-cover border border-orange-500" />
-
-  <div>
-    <p class="text-xs text-gray-400">Signed in as</p>
-    <p id="menuUserName" class="text-orange-500 font-semibold text-sm">
-      User
-    </p>
-  </div>
-</div>
+      <h3 id="menuWelcome">Welcome to Blackwear</h3>  
       <div class="small-note" id="userEmailNote"></div>  
-    </div>  
-  <div class="menu-links">  
+    </div>  <div class="menu-links">  
   <a href="my-order.html">My Orders</a>  
   <a href="wishlist.html">Wishlist</a>  
   <a href="contact.html">Contact</a>  
@@ -242,22 +224,7 @@ function displayProducts(list) {
       grid.appendChild(el);  
     });  
   }  
-
-    // Update menu/profile
-    const nameEl = document.getElementById('menuUserName');
-    if(nameEl) nameEl.textContent = user.displayName || "User";
-
-    const avatarEl = document.getElementById('menuAvatar');
-    const docSnap = await db.collection('users').doc(user.uid).get();
-    if(docSnap.exists && docSnap.data().photoURL && avatarEl) {
-      avatarEl.src = docSnap.data().photoURL;
-    }
-
-    // Load products & cart
-    loadProductsFromFirestore();
-    await loadCartCountForUser();
-  });
-    
+  
   // Random banner logic  
   let bannerTimer = null;  
   function setupBanner(list) {  
@@ -383,48 +350,49 @@ async function addToCart(productId, name, price, image){
     alert('Failed to add to cart');  
   }  
 }  
-
-  // Cart count
-let cartCount = 0;
-function incrementCartCount() { cartCount++; updateCartBadge(); }
-function updateCartBadge() { document.getElementById('cartCount').textContent = cartCount; }
-async function loadCartCountForUser() {
-const user = auth.currentUser;
-if (!user) return;
-try {
-const snap = await db.collection('cart')
-.where('userId','==',user.uid)
-.get();
-cartCount = snap.size;
-updateCartBadge();
-} catch (err) {
-console.error('count error', err);
- }
-}
-
-// Menu & UI
-function toggleMenu() { document.getElementById('sideMenu').style.left = '0'; document.getElementById('overlay').style.display = 'block'; }
-function closeMenu() { document.getElementById('sideMenu').style.left = '-270px'; document.getElementById('overlay').style.display = 'none'; }
-function openCart() { window.location.href = 'cart.html'; }
-function scrollToProducts() { document.getElementById('products').scrollIntoView({ behavior: 'smooth' }); }
-function searchProducts() {
-const q = document.getElementById('searchInput').value.toLowerCase();
-displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));
-}
-
-// Auth and init
-async function initAuthAndLoad() {
-auth.onAuthStateChanged(async user => {
-if (!user) {
-try { await auth.signInAnonymously(); } catch(e){ console.error('Auth error', e); }
-} else {
-loadProductsFromFirestore();
-loadCartCountForUser();
- }
-});
-}
-initAuthAndLoad();
-</script>
-
-</body>    
-</html>
+  
+  // Cart count  
+  let cartCount = 0;  
+  function incrementCartCount() { cartCount++; updateCartBadge(); }  
+  function updateCartBadge() { document.getElementById('cartCount').textContent = cartCount; }  
+  async function loadCartCountForUser() {  
+  const user = auth.currentUser;  
+  if (!user) return;  
+  try {  
+    const snap = await db.collection('cart')  
+      .where('userId','==',user.uid)  
+      .get();  
+    cartCount = snap.size;  
+    updateCartBadge();  
+  } catch (err) {  
+    console.error('count error', err);  
+  }  
+}  
+  
+  // Menu & UI  
+  function toggleMenu() { document.getElementById('sideMenu').style.left = '0'; document.getElementById('overlay').style.display = 'block'; }  
+  function closeMenu() { document.getElementById('sideMenu').style.left = '-270px'; document.getElementById('overlay').style.display = 'none'; }  
+  function openCart() { window.location.href = 'cart.html'; }  
+  function scrollToProducts() { document.getElementById('products').scrollIntoView({ behavior: 'smooth' }); }  
+  function searchProducts() {  
+    const q = document.getElementById('searchInput').value.toLowerCase();  
+    displayProducts(products.filter(p => p.name && p.name.toLowerCase().includes(q)));  
+  }  
+  
+  // Auth and init  
+  async function initAuthAndLoad() {  
+    auth.onAuthStateChanged(async user => {  
+      if (!user) {  
+        try { await auth.signInAnonymously(); } catch(e){ console.error('Auth error', e); }  
+      } else {  
+        loadProductsFromFirestore();  
+        loadCartCountForUser();  
+      }  
+    });  
+  }  
+  initAuthAndLoad();  
+  
+  });  
+});  
+    </script>  </body>  
+</html
