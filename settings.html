@@ -1,103 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings | Blackwear</title>
+<title>Settings — Blackwear</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{
-  margin:0;
-  padding:20px;
-  background:#0f0f0f;
-  color:#fff;
-  font-family:system-ui;
-}
-.container{
-  max-width:700px;
-  margin:auto;
-  background:#141414;
-  padding:20px;
-  border-radius:14px;
-}
-h1{
-  color:#ff7f00;
-  margin-bottom:20px;
-}
-.section{
-  margin-bottom:25px;
-}
-label{
-  display:block;
-  margin-bottom:6px;
-  font-weight:600;
-}
-input, select{
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  background:#000;
-  color:#fff;
-}
-.save-btn{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:14px;
-  background:#ff7f00;
-  color:#000;
-  font-weight:bold;
-  font-size:16px;
-  cursor:pointer;
-}
-.success{
-  display:none;
-  background:#003300;
-  color:#00ff88;
-  padding:12px;
-  border-radius:10px;
-  margin-top:15px;
-}
+  body { background:#0b0b0b; color:white; font-family:Poppins,sans-serif; }
+  .btn { transition:.2s }
+  .btn:hover { transform:scale(1.04) }
 </style>
 </head>
-<body>
-<div class="container">
-  <h1>Account Settings</h1>
 
-  <!-- Profile -->
-  <div class="section">
-    <h3>Profile Information</h3>
-    <label>Full Name</label>
-    <input id="name" placeholder="Your name">
+<body class="min-h-screen flex items-center justify-center px-4">
 
-    <label>Phone Number</label>
-    <input id="phone" placeholder="Your phone">
+<div class="bg-[#111] w-full max-w-md p-6 rounded-xl shadow-lg relative">
 
-    <label>Delivery Address</label>
-    <input id="address" placeholder="Delivery address">
+  <!-- Back -->
+  <button onclick="location.href='profile.html'"
+    class="absolute left-4 top-4 text-orange-500 text-sm btn">
+    ← Back
+  </button>
+
+  <h1 class="text-2xl font-bold text-orange-500 text-center mb-6">
+    Account Settings
+  </h1>
+
+  <!-- CHANGE PASSWORD -->
+  <div class="mb-6 border-b border-[#222] pb-6">
+    <h2 class="text-lg font-semibold mb-3">Change Password</h2>
+
+    <div class="relative mb-3">
+      <input id="newPassword" type="password"
+        placeholder="New password"
+        class="w-full p-3 rounded-lg bg-[#222] text-white pr-10" />
+      <span onclick="togglePass('newPassword')"
+        class="absolute right-3 top-3 cursor-pointer">👁️</span>
+    </div>
+
+    <button id="changePasswordBtn"
+      class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold btn">
+      Update Password
+    </button>
+
+    <p id="passMsg" class="text-sm mt-2"></p>
   </div>
 
-  <!-- Preferences -->
-  <div class="section">
-    <h3>Preferences</h3>
+  <!-- DANGER ZONE -->
+  <div>
+    <h2 class="text-lg font-semibold text-red-500 mb-2">Danger Zone</h2>
+    <p class="text-sm text-gray-400 mb-4">
+      Deleting your account is permanent and cannot be undone.
+    </p>
 
-    <label>Delivery Notification</label>
-    <select id="notify">
-      <option value="whatsapp">WhatsApp</option>
-      <option value="sms">SMS</option>
-      <option value="email">Email</option>
-    </select>
-
-    <label>Preferred Delivery Time</label>
-    <select id="deliveryTime">
-      <option value="morning">Morning</option>
-      <option value="afternoon">Afternoon</option>
-      <option value="evening">Evening</option>
-    </select>
+    <button onclick="openDeleteModal()"
+      class="w-full bg-red-600 hover:bg-red-700 p-3 rounded-lg font-semibold btn">
+      Delete Account
+    </button>
   </div>
 
-  <button class="save-btn" id="saveBtn">Save Settings</button>
-  <div class="success" id="success">Settings updated successfully</div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="deleteModal"
+  class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center">
+
+  <div class="bg-[#111] p-6 rounded-xl w-full max-w-sm">
+    <h3 class="text-xl font-bold text-red-500 mb-3">Confirm Deletion</h3>
+    <p class="text-sm mb-4">
+      Are you sure you want to permanently delete your Blackwear account?
+    </p>
+
+    <input id="confirmPassword" type="password"
+      placeholder="Enter your password"
+      class="w-full p-3 rounded-lg bg-[#222] text-white mb-4" />
+
+    <div class="flex gap-3">
+      <button onclick="closeDeleteModal()"
+        class="flex-1 bg-[#222] p-3 rounded-lg btn">
+        Cancel
+      </button>
+
+      <button id="confirmDeleteBtn"
+        class="flex-1 bg-red-600 hover:bg-red-700 p-3 rounded-lg btn">
+        Delete
+      </button>
+    </div>
+
+    <p id="deleteMsg" class="text-sm mt-3"></p>
+  </div>
 </div>
 
 <!-- Firebase -->
@@ -106,63 +97,87 @@ input, select{
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
   authDomain: "blackwear-14a31.firebaseapp.com",
   projectId: "blackwear-14a31"
-});
+};
 
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const el = id => document.getElementById(id);
 
-let uid = null;
-
-// Sign in anonymously
-auth.onAuthStateChanged(async user => {
-  if(!user){
-    await auth.signInAnonymously();
-  }
-  uid = auth.currentUser.uid;
-  loadSettings();
+// AUTH CHECK
+auth.onAuthStateChanged(user => {
+  if (!user) location.href = "login.html";
 });
 
-// Load settings from Firestore
-async function loadSettings(){
-  if(!uid) return;
-
-  const doc = await db.collection("users").doc(uid).get();
-  if(!doc.exists) return;
-
-  const data = doc.data();
-  el("name").value = data.name || "";
-  el("phone").value = data.phone || "";
-  el("address").value = data.address || "";
-  el("notify").value = data.notify || "whatsapp";
-  el("deliveryTime").value = data.deliveryTime || "morning";
+// PASSWORD TOGGLE
+function togglePass(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === "password" ? "text" : "password";
 }
 
-// Save settings
-el("saveBtn").onclick = async () => {
-  if(!uid) return;
+// CHANGE PASSWORD
+document.getElementById("changePasswordBtn").onclick = async () => {
+  const pass = document.getElementById("newPassword").value;
+  const msg = document.getElementById("passMsg");
+
+  if (pass.length < 6) {
+    msg.textContent = "Password must be at least 6 characters.";
+    msg.style.color = "red";
+    return;
+  }
 
   try {
-    await db.collection("users").doc(uid).set({
-      name: el("name").value,
-      phone: el("phone").value,
-      address: el("address").value,
-      notify: el("notify").value,
-      deliveryTime: el("deliveryTime").value,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge:true });
+    await auth.currentUser.updatePassword(pass);
+    msg.textContent = "Password updated successfully.";
+    msg.style.color = "lightgreen";
+  } catch (err) {
+    msg.textContent = "Please re-login to change password.";
+    msg.style.color = "orange";
+  }
+};
 
-    el("success").style.display = "block";
-    setTimeout(() => el("success").style.display = "none", 3000);
-  } catch(err){
-    console.error(err);
-    alert("Failed to save settings. Check console.");
+// DELETE ACCOUNT
+function openDeleteModal() {
+  document.getElementById("deleteModal").style.display = "flex";
+}
+function closeDeleteModal() {
+  document.getElementById("deleteModal").style.display = "none";
+}
+
+// CONFIRM DELETE
+document.getElementById("confirmDeleteBtn").onclick = async () => {
+  const password = document.getElementById("confirmPassword").value;
+  const msg = document.getElementById("deleteMsg");
+  const user = auth.currentUser;
+
+  if (!password) {
+    msg.textContent = "Password required.";
+    msg.style.color = "red";
+    return;
+  }
+
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(
+      user.email,
+      password
+    );
+
+    await user.reauthenticateWithCredential(cred);
+    await db.collection("users").doc(user.uid).delete();
+    await user.delete();
+
+    alert("Account permanently deleted.");
+    location.href = "signup.html";
+
+  } catch (err) {
+    msg.textContent = "Password incorrect or session expired.";
+    msg.style.color = "red";
   }
 };
 </script>
+
 </body>
 </html>
