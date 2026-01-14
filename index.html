@@ -153,7 +153,7 @@
   auth.onAuthStateChanged(user => {
     if (!user) {
       // Not logged in → redirect to login
-      window.location.replace("login.html");
+      window.location.replace("entry.html");
     } else if (!user.emailVerified) {
       // Logged in but email not verified → redirect to login
       alert("Please verify your email before accessing Blackwear.");
