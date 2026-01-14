@@ -126,27 +126,168 @@
     <div id="noProductsMsg" class="no-products" style="display:none;">No products found.</div>  
   </section>    <footer>  
     © 2025 Blackwear. All rights reserved.  
-  </footer>    <!-- Firebase JS (compat for simpler single-file usage) -->    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>   <script>  
-  // ---------- FIREBASE CONFIG ----------  
-  const firebaseConfig = {  
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",  
-    authDomain: "blackwear-14a31.firebaseapp.com",  
-    databaseURL: "https://blackwear-14a31-default-rtdb.firebaseio.com",  
-    projectId: "blackwear-14a31",  
-    storageBucket: "blackwear-14a31.firebasestorage.app",  
-    messagingSenderId: "222479690292",  
-    appId: "1:222479690292:web:82bd91e186da6412133861",  
-    measurementId: "G-22CT8W6RL7"  
-  };  
-  
-  // Initialize Firebase  
-  firebase.initializeApp(firebaseConfig);  
-  const auth = firebase.auth();  
-  const db = firebase.firestore();  
-  
-  // Helpers  
-  function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }  
-  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }  
+  </footer>    
+
+<!-- Firebase JS -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // ---------- FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // ---------- AUTH CHECK ----------
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      // Not logged in → redirect to login
+      window.location.replace("login.html");
+    } else if (!user.emailVerified) {
+      // Logged in but email not verified → redirect to login
+      alert("Please verify your email before accessing Blackwear.");
+      auth.signOut().then(() => window.location.replace("login.html"));
+    } else {
+      // Logged in and verified → load store
+      loadProductsFromFirestore();
+      loadCartCountForUser();
+
+      // Show user info in menu
+      const welcomeEl = document.getElementById('menuWelcome');
+      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + (user.displayName || 'User');
+
+      const userEmailNote = document.getElementById('userEmailNote');
+      if (userEmailNote) userEmailNote.textContent = user.email;
+
+      // Show sign out button
+      const signOutBtn = document.getElementById('signOutBtn');
+      if (signOutBtn) {
+        signOutBtn.style.display = 'block';
+        signOutBtn.onclick = () => auth.signOut().then(() => window.location.replace('login.html'));
+      }
+    }
+  });
+
+  // ---------- HELPER FUNCTIONS ----------
+  function escapeJs(v) { return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
+  function escapeHtml(s) { return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
+
+  // The rest of your functions like loadProductsFromFirestore(), addToCart(), placeOrder() etc.
+</script><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Blackwear</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+  body { background: #0b0b0b; font-family: Poppins,sans-serif; color:white; }
+  .btn { transition: all 0.2s; }
+  .btn:hover { transform: scale(1.05); }
+  .input-group { position: relative; }
+  .input-group i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999; }
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+
+<div class="bg-[#111] p-8 rounded-xl w-full max-w-sm shadow-lg">
+  <h1 class="text-2xl font-bold text-orange-500 mb-6 text-center">Login</h1>
+
+  <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded-lg mb-4 bg-[#222] text-white" />
+
+  <div class="input-group mb-4">
+    <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#222] text-white" />
+    <i class="fa fa-eye" id="togglePassword"></i>
+  </div>
+
+  <button id="loginBtn" class="w-full bg-orange-500 text-black p-3 rounded-lg font-semibold mb-2">Login</button>
+
+  <p class="mt-4 text-gray-400 text-sm text-center">
+    Don't have an account? <a href="signup.html" class="text-orange-500">Sign up</a>
+  </p>
+  <p id="msg" class="mt-2 text-sm text-center"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// --- Show/Hide Password ---
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+togglePassword.addEventListener('click', () => {
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    togglePassword.classList.replace("fa-eye", "fa-eye-slash");
+  } else {
+    passwordInput.type = "password";
+    togglePassword.classList.replace("fa-eye-slash", "fa-eye");
+  }
+});
+
+// --- Login Logic ---
+const loginBtn = document.getElementById("loginBtn");
+const msg = document.getElementById("msg");
+
+loginBtn.addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    msg.style.color = "red";
+    msg.textContent = "Please fill all fields.";
+    return;
+  }
+
+  msg.style.color = "white";
+  msg.textContent = "Logging in...";
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      msg.style.color = "red";
+      msg.textContent = "Please verify your email before logging in.";
+      await auth.signOut();
+      return;
+    }
+
+    msg.style.color = "green";
+    msg.textContent = "Login successful! Redirecting...";
+    setTimeout(() => {
+      window.location.replace("index.html");
+    }, 1200);
+
+  } catch (err) {
+    console.error(err);
+    msg.style.color = "red";
+    msg.textContent = "Login failed: " + err.message;
+  }
   
   // PRODUCT STORAGE  
   let products = [];  
