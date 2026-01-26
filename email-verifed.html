@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Verification — Blackwear</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, applyActionCode } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+// ---------- FIREBASE CONFIG ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+  authDomain: "blackwear-14a31.firebaseapp.com",
+  projectId: "blackwear-14a31"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// ---------- PARSE URL PARAM ----------
+const params = new URLSearchParams(window.location.search);
+const code = params.get('oobCode');
+
+// ---------- STATUS ELEMENT ----------
+const statusEl = document.getElementById("status");
+
+async function verifyEmail() {
+  if (!code) {
+    statusEl.textContent = "No verification code found in the URL.";
+    return;
+  }
+
+  statusEl.textContent = "Verifying your email...";
+
+  try {
+    await applyActionCode(auth, code);
+    statusEl.textContent = "✅ Your email has been verified successfully!";
+    
+    // Redirect to home page after 3 seconds
+    setTimeout(() => {
+      window.location.href = "/index.html"; // Change if your homepage is elsewhere
+    }, 3000);
+
+  } catch (err) {
+    console.error("Email verification failed:", err);
+    statusEl.textContent = "❌ Verification failed or already verified. You may log in directly.";
+    
+    // Optional: redirect to login after 5 seconds
+    setTimeout(() => {
+      window.location.href = "/login.html";
+    }, 5000);
+  }
+}
+
+verifyEmail();
+</script>
+<style>
+body {
+  background: #0b0b0b;
+  color: white;
+  font-family: Poppins, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+#status {
+  text-align: center;
+  font-size: 18px;
+  padding: 20px 30px;
+  background: #111;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+</style>
+</head>
+<body>
+  <div id="status">Preparing to verify...</div>
+</body>
+</html>
