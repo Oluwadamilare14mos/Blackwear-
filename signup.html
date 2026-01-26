@@ -98,25 +98,12 @@ signupBtn.addEventListener("click", async () => {
       createdAt: serverTimestamp()
     });
 
-// 4️⃣ Send email verification with redirect
+    // 4️⃣ Send email verification with redirect
     const actionCodeSettings = {
       url: "https://blackwear.netlify.app", // <-- redirect after verification
       handleCodeInApp: true
     };
     await sendEmailVerification(userCredential.user, actionCodeSettings);
-
-    // 5️⃣ Notify user
-    msg.style.color = "green";
-    msg.textContent = "Account created! Verification email sent. Check your inbox.";
-
-    // Optional: sign out to force verification
-    await auth.signOut();
-
-  } catch (err) {
-    console.error(err);
-    msg.style.color = "red";
-    msg.textContent = "Sign up failed: " + err.message;
-  }
 
     // 5️⃣ Notify user
     msg.style.color = "green";
