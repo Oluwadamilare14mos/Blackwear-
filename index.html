@@ -126,28 +126,65 @@
     <div id="noProductsMsg" class="no-products" style="display:none;">No products found.</div>  
   </section>    <footer>  
     © 2025 Blackwear. All rights reserved.  
-  </footer>    <!-- Firebase JS (compat for simpler single-file usage) -->    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>   <script>  
-  // ---------- FIREBASE CONFIG ----------  
-  const firebaseConfig = {  
-    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",  
-    authDomain: "blackwear-14a31.firebaseapp.com",  
-    databaseURL: "https://blackwear-14a31-default-rtdb.firebaseio.com",  
-    projectId: "blackwear-14a31",  
-    storageBucket: "blackwear-14a31.firebasestorage.app",  
-    messagingSenderId: "222479690292",  
-    appId: "1:222479690292:web:82bd91e186da6412133861",  
-    measurementId: "G-22CT8W6RL7"  
-  };  
-  
-  // Initialize Firebase  
-  firebase.initializeApp(firebaseConfig);  
-  const auth = firebase.auth();  
-  const db = firebase.firestore();  
-  
-  // Helpers  
-  function escapeJs(v){ return String(v).replace(/'/g,"\\'").replace(/"/g,'\\"'); }  
-  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }  
-  
+  </footer>    
+
+<!-- Firebase JS -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // ---------- FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy0bIMp1ORV0UfLgKlxyr2V-I9mJjFb6o",
+    authDomain: "blackwear-14a31.firebaseapp.com",
+    projectId: "blackwear-14a31",
+    storageBucket: "blackwear-14a31.firebasestorage.app",
+    messagingSenderId: "222479690292",
+    appId: "1:222479690292:web:82bd91e186da6412133861"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // ---------- AUTH CHECK ----------
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      // Not logged in → redirect to login
+      window.location.replace("entry.html");
+    } else if (!user.emailVerified) {
+      // Logged in but email not verified → redirect to login
+      alert("Please verify your email before accessing Blackwear.");
+      auth.signOut().then(() => window.location.replace("login.html"));
+    } else {
+      // Logged in and verified → load store
+      loadProductsFromFirestore();
+      loadCartCountForUser();
+
+      // Show user info in menu
+      const welcomeEl = document.getElementById('menuWelcome');
+      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + (user.displayName || 'User');
+
+      const userEmailNote = document.getElementById('userEmailNote');
+      if (userEmailNote) userEmailNote.textContent = user.email;
+
+      // Show sign out button
+      const signOutBtn = document.getElementById('signOutBtn');
+      if (signOutBtn) {
+        signOutBtn.style.display = 'block';
+        signOutBtn.onclick = () => auth.signOut().then(() => window.location.replace('login.html'));
+      }
+    }
+  });
+
+  // ---------- HELPER FUNCTIONS ----------
+  function escapeJs(v) { return String(v).replace(/'/g,"\'").replace(/"/g,'\"'); }
+  function escapeHtml(s) { return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
+
+  // The rest of your functions like loadProductsFromFirestore(), addToCart(), placeOrder() etc.
+ 
   // PRODUCT STORAGE  
   let products = [];  
   
@@ -382,7 +419,7 @@ async function addToCart(productId, name, price, image){
   async function initAuthAndLoad() {  
     auth.onAuthStateChanged(async user => {  
       if (!user) {  
-        try { await auth.signInAnonymously(); } catch(e){ 4('Auth error', e); }  
+        try { await auth.signInAnonymously(); } catch(e){ console.error('Auth error', e); }  
       } else {  
         loadProductsFromFirestore();  
         loadCartCountForUser();  
@@ -391,4 +428,4 @@ async function addToCart(productId, name, price, image){
   }  
   initAuthAndLoad();  
     </script>  </body>  
-</html>
+</html
